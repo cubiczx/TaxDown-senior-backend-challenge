@@ -1,0 +1,39 @@
+service: motorbike-shop-api
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  stage: dev
+  region: us-east-1
+
+functions:
+  createCustomer:
+    handler: handler.create
+    events:
+      - http:
+          path: customers
+          method: post
+
+  listCustomers:
+    handler: handler.list
+    events:
+      - http:
+          path: customers
+          method: get
+
+  updateCustomer:
+    handler: handler.update
+    events:
+      - http:
+          path: customers/{id}
+          method: put
+
+  deleteCustomer:
+    handler: handler.delete
+    events:
+      - http:
+          path: customers/{id}
+          method: delete
+          
+plugins:
+  - serverless-offline

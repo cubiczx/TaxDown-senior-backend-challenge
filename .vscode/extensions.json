@@ -1,0 +1,14 @@
+{
+    "recommendations": [
+      "dbaeumer.vscode-eslint",        // Linter for JavaScript/Node.js
+      "esbenp.prettier-vscode",        // Formatting code
+      "streetsidesoftware.code-spell-checker",  // Spelling checker
+      "humao.rest-client",             // Test APIs directly from VSCode
+      "firsttris.vscode-jest-runner",  // Running Jest tests from VSCode
+      "eamodio.gitlens",             
+      "esbenp.prettier-vscode",
+      "DavidAnson.vscode-markdownlint",
+      "Codeium.codeium"
+    ]
+  }
+  
