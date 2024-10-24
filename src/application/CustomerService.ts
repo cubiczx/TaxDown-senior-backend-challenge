@@ -25,8 +25,8 @@ export class CustomerService {
     availableCredit: number
   ): Promise<Customer> {
     ValidationUtils.validateName(name);
-    await ValidationUtils.validateEmail(email, this.customerRepository);
     ValidationUtils.validateAvailableCredit(availableCredit);
+    await ValidationUtils.validateEmail(email, this.customerRepository);
 
     // Create a new Customer object
     const customer = new Customer(
@@ -63,8 +63,7 @@ export class CustomerService {
     email: string,
     availableCredit: number
   ): Promise<Customer> {
-    await ValidationUtils.validateCustomerExists(id, this.customerRepository);
-
+    ValidationUtils.validateAvailableCredit(availableCredit);
     // Fetch the customer (at this point, we know it exists)
     const customer = await this.customerRepository.findById(id);
 
@@ -78,7 +77,7 @@ export class CustomerService {
         await ValidationUtils.validateEmail(email, this.customerRepository);
     }
     ValidationUtils.validateName(name);
-    ValidationUtils.validateAvailableCredit(availableCredit);
+    await ValidationUtils.validateCustomerExists(id, this.customerRepository);
 
     // Update customer
     customer.name = name;

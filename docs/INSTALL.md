@@ -4,7 +4,7 @@
 
 ```bash
 git clone https://github.com/cubiczx/TaxDown-senior-backend-challenge.git
-cd https://github.com/cubiczx/TaxDown-senior-backend-challenge
+cd TaxDown-senior-backend-challenge.git
 ```
 
 ## 2. Clone the repository

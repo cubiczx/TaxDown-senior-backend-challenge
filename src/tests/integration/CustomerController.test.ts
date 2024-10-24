@@ -191,7 +191,9 @@ describe("CustomerController Integration Tests", () => {
 
   describe("GET /customers", () => {
     it("should retrieve a list of customers", async () => {
-      // TODO fix: expect(received).toBe(expected) // Object.is equality Expected: 2 Received: 0
+      // TODO FIX: expect(received).toBe(expected) // Object.is equality
+      // Expected: 2
+      // Received: 0
       const customers = [
         new Customer(
           "123",
@@ -207,11 +209,11 @@ describe("CustomerController Integration Tests", () => {
         ),
       ];
 
+      // Asegúrate de que el mock de findAll devuelva la lista de clientes
       (customerRepository.findAll as jest.Mock).mockResolvedValue(customers);
 
       const response = await request(app).get("/customers").expect(200);
-
-      expect(response.body.length).toBe(2);
+      expect(response.body.length).toBe(2); // Ahora la respuesta debe contener 2 clientes
       expect(response.body[0].name).toBe("Xavier Palacín Ayuso");
       expect(response.body[1].name).toBe("Xavier Palacín Ayuso 2");
     });
@@ -300,7 +302,7 @@ describe("CustomerController Integration Tests", () => {
     });
 
     it("should throw InvalidEmailFormatException for invalid email format", async () => {
-      // TODO Fix expected 400 "Bad Request", got 404 "Not Found"
+      // TODO FIX: expected 400 "Bad Request", got 404 "Not Found"
       const existingCustomer = {
         id: "123",
         name: "Xavier Palacín Ayuso",
