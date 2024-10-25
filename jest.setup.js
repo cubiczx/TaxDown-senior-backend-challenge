@@ -1,0 +1,1 @@
+process.env.NODE_ENV = 'test'; // Define NODE_ENV como 'test'

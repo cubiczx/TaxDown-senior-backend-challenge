@@ -31,7 +31,11 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(specs));
 
 // Configuring Services and Drivers
 const customerRepository = new InMemoryCustomerRepository();
-const customerService = new CustomerService(customerRepository);
+
+app.locals.customerRepository = customerRepository;
+const customerService = new CustomerService(app.locals.customerRepository);
+
+//const customerService = new CustomerService(customerRepository);
 const customerController = new CustomerController(customerService);
 
 // Definition of routes
@@ -62,9 +66,11 @@ app.use((err: any, req: Request, res: Response, next: NextFunction) => {
 
 // Start server
 const PORT = process.env.PORT || 3000; // Use PORT from .env or fallback to 3000
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
-  console.log(
-    `API documentation available at http://localhost:${PORT}/api-docs`
-  );
-});
+if (process.env.NODE_ENV !== "test") {
+  app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
+    console.log(
+      `API documentation available at http://localhost:${PORT}/api-docs`
+    );
+  });
+}

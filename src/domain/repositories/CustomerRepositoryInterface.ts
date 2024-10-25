@@ -10,4 +10,5 @@ export interface CustomerRepositoryInterface {
   //addCredit(id: string, amount: number): Promise<Customer | null>;
   findByAvailableCredit(minCredit: number): Promise<Customer[]>;
   //sortCustomersByCredit(order: string): Promise<Customer[]>;
+  clear(): Promise<void>;
 }

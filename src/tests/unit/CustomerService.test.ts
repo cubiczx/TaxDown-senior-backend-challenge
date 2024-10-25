@@ -9,6 +9,7 @@ import { InvalidTypeException } from "../../exceptions/InvalidTypeException";
 import { InvalidEmailFormatException } from "../../exceptions/InvalidEmailFormatException";
 import { NameTooShortException } from "../../exceptions/NameTooShortException";
 import { EmptyNameException } from "../../exceptions/EmptyNameException";
+import { InvalidSortOrderException } from "../../exceptions/InvalidSortOrderException";
 
 jest.mock("../../utils/ValidationUtils");
 
@@ -17,6 +18,9 @@ describe("CustomerService", () => {
   let customerService: CustomerService;
 
   beforeEach(() => {
+    jest.clearAllMocks(); // clears call state and return values.
+    jest.restoreAllMocks(); // resets mocks to their original behavior.
+    jest.resetAllMocks(); // resets the state of all mocks, removing any special configuration you've made.
     customerRepository = {
       create: jest.fn(),
       findAll: jest.fn(),
@@ -25,11 +29,9 @@ describe("CustomerService", () => {
       update: jest.fn(),
       delete: jest.fn(),
       findByAvailableCredit: jest.fn(),
+      clear: jest.fn(),
     };
     customerService = new CustomerService(customerRepository);
-    jest.clearAllMocks(); // clears call state and return values.
-    jest.restoreAllMocks(); // resets mocks to their original behavior.
-    jest.resetAllMocks(); // resets the state of all mocks, removing any special configuration you've made.
   });
 
   describe("create", () => {
@@ -215,6 +217,22 @@ describe("CustomerService", () => {
       expect(updatedCustomer.availableCredit).toBe(availableCredit);
     });
 
+    it("should update only the name of an existing customer", async () => {
+      const updatedName = "Updated Name";
+  
+      const updatedCustomer = await customerService.update(
+        id,
+        updatedName,
+        undefined,
+        undefined
+      );
+  
+      expect(updatedCustomer).toBeDefined();
+      expect(updatedCustomer.name).toBe(updatedName);
+      expect(updatedCustomer.email).toBe(existingCustomer.email);
+      expect(updatedCustomer.availableCredit).toBe(existingCustomer.availableCredit);
+    });
+
     it("should throw CustomerNotFoundException if customer does not exist", async () => {
       (customerRepository.findById as jest.Mock).mockResolvedValue(null);
 
@@ -252,7 +270,6 @@ describe("CustomerService", () => {
       const name = "Xavier Palacín Ayuso";
       const availableCredit = 2000;
 
-      // Simula que el cliente existe
       const existingCustomer = new Customer(
         id,
         name,
@@ -263,7 +280,7 @@ describe("CustomerService", () => {
         existingCustomer
       );
 
-      // Simula que findByEmail retorna otro cliente con el mismo email
+      // Simulates that findByEmail returns another client with the same email
       const anotherCustomer = new Customer(
         "456",
         "Another User",
@@ -399,9 +416,8 @@ describe("CustomerService", () => {
     it("should throw CustomerNotFoundException if customer does not exist", async () => {
       // Arrange
       const id = "non-existent-id";
-      (customerRepository.findById as jest.Mock).mockResolvedValue(null); // Simula que no existe
+      (customerRepository.findById as jest.Mock).mockResolvedValue(null); // Pretend it doesn't exist
 
-      // Mock de la función de validación para lanzar la excepción
       (ValidationUtils.validateCustomerExists as jest.Mock).mockImplementation(
         async () => {
           throw new CustomerNotFoundException();
@@ -441,6 +457,10 @@ describe("CustomerService", () => {
       ];
       (customerRepository.findAll as jest.Mock).mockResolvedValue(customers);
 
+      (ValidationUtils.validateSortOrder as jest.Mock).mockResolvedValue(
+        'desc'
+      );
+
       // Act
       const result = await customerService.sortCustomersByCredit();
 
@@ -456,10 +476,13 @@ describe("CustomerService", () => {
         new Customer("3", "Customer Three", "three@example.com", 100),
       ];
       (customerRepository.findAll as jest.Mock).mockResolvedValue(customers);
-
+      (ValidationUtils.validateSortOrder as jest.Mock).mockReturnValue(
+        'asc'
+      );
+    
       // Act
       const result = await customerService.sortCustomersByCredit("asc");
-
+    
       // Assert
       expect(result).toMatchObject([
         {
@@ -493,6 +516,18 @@ describe("CustomerService", () => {
       // Assert
       expect(result).toEqual([]);
     });
+
+    it("should throw InvalidSortOrderException if send invalid sort order", async () => {
+      (ValidationUtils.validateSortOrder as jest.Mock).mockImplementation(() => {
+        throw new InvalidSortOrderException();
+      });
+      // Arrange
+      const invalidSortOrder = "invalidOrder";
+  
+      // Act & Assert
+      await expect(customerService.sortCustomersByCredit(invalidSortOrder)).rejects.toThrow(InvalidSortOrderException);
+    });
+
   });
 
   describe("addCredit", () => {
@@ -500,7 +535,6 @@ describe("CustomerService", () => {
       const customerId = "12345";
       const creditToAdd = 50;
 
-      // Mockear findById para que el cliente exista
       (customerRepository.findById as jest.Mock).mockResolvedValue({
         id: customerId,
         name: "John Doe",
@@ -508,20 +542,19 @@ describe("CustomerService", () => {
         availableCredit: 100,
       });
 
-      // Mockear validateCustomerExists para que no lance excepción
       (ValidationUtils.validateCustomerExists as jest.Mock).mockResolvedValue(
         undefined
       );
 
-      // Actuar llamando a addCredit
+      // Act
       const updatedCustomer = await customerService.addCredit(
         customerId,
         creditToAdd
       );
 
-      // Verificaciones
-      expect(updatedCustomer).not.toBeNull(); // Verifica que no sea null
-      expect(updatedCustomer!.availableCredit).toBe(150); // Confía que no es null y verifica el crédito
+      // Assert
+      expect(updatedCustomer).not.toBeNull();
+      expect(updatedCustomer!.availableCredit).toBe(150);
     });
 
     it("should throw CustomerNotFoundException if customer does not exist", async () => {

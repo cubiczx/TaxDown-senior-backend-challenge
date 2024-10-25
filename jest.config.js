@@ -1,4 +1,5 @@
 module.exports = {
+
     preset: 'ts-jest',
     testEnvironment: 'node',
     transform: {
@@ -10,5 +11,6 @@ module.exports = {
       '^@/(.*)$': '<rootDir>/src/$1',
     },
     transformIgnorePatterns: ['<rootDir>/node_modules/'],
+    setupFiles: ['<rootDir>/jest.setup.js'],
   };
   

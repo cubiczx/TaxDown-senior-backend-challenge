@@ -458,6 +458,7 @@ export class CustomerController {
    *       - name: order
    *         in: query
    *         description: Sort order (asc for ascending or desc for descending)
+   *         required: false
    *         schema:
    *           type: string
    *           enum: [asc, desc]
@@ -488,23 +489,28 @@ export class CustomerController {
    *         description: Invalid sort order provided
    *         content:
    *           application/json:
-   *             example:
-   *               error: "Invalid sort order. Use 'asc' or 'desc'."
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 error:
+   *                   type: string
+   *                   example: "Invalid sort order. Use 'asc' or 'desc'."
    *       500:
    *         description: An error occurred
    *         content:
    *           application/json:
-   *             example:
-   *               error: "An error occurred while sorting customers by credit: <error message>"
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 error:
+   *                   type: string
+   *                   example: "An error occurred while sorting customers by credit: <error message>"
    */
   async sortCustomersByCredit(req: Request, res: Response): Promise<void> {
-    const order = req.query.order as string;
-    const validOrder = order === "asc" || order === "desc" ? order : undefined;
+    const order = req.query.order as string | undefined;
 
     try {
-      const sortedCustomers = await this.customerService.sortCustomersByCredit(
-        validOrder
-      );
+      const sortedCustomers = await this.customerService.sortCustomersByCredit(order);
       res.status(200).json(sortedCustomers);
     } catch (error) {
       const errorMessage =

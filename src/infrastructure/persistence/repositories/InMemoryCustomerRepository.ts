@@ -72,4 +72,13 @@ export class InMemoryCustomerRepository implements CustomerRepositoryInterface {
       (customer) => customer.availableCredit >= minCredit
     );
   }
+
+  /**
+   * Clears all customers from the repository.
+   * This is mainly for testing purposes.
+   * @returns A promise that resolves when all customers have been cleared.
+   */
+  public async clear(): Promise<void> {
+    this.customers = [];
+  }
 }

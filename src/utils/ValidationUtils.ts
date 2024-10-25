@@ -6,6 +6,7 @@ import { NegativeCreditAmountException } from "../exceptions/NegativeCreditAmoun
 import { EmptyNameException } from "../exceptions/EmptyNameException";
 import { NameTooShortException } from "../exceptions/NameTooShortException";
 import { InvalidTypeException } from "../exceptions/InvalidTypeException";
+import { InvalidSortOrderException } from "../exceptions/InvalidSortOrderException";
 
 export class ValidationUtils {
   /**
@@ -81,5 +82,22 @@ export class ValidationUtils {
     if (amount < 0) {
       throw new NegativeCreditAmountException();
     }
+  }
+
+  /**
+   * Validates the given sort order to ensure it is either "asc" or "desc".
+   * Returns "desc" if the order is undefined.
+   * Throws InvalidSortOrderException if the order is not valid.
+   * @param {string | undefined} order - The order to validate
+   * @returns {"asc" | "desc"} - The validated order
+   */
+  static validateSortOrder(order: string | undefined): "asc" | "desc" {
+    if (order === undefined) {
+      return "desc";
+    }
+    if (order === "asc" || order === "desc") {
+      return order as "asc" | "desc";
+    }
+    throw new InvalidSortOrderException();
   }
 }
