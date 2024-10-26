@@ -35,7 +35,6 @@ const customerRepository = new InMemoryCustomerRepository();
 app.locals.customerRepository = customerRepository;
 const customerService = new CustomerService(app.locals.customerRepository);
 
-//const customerService = new CustomerService(customerRepository);
 const customerController = new CustomerController(customerService);
 
 // Definition of routes

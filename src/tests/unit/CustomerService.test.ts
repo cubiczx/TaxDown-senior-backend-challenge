@@ -390,6 +390,20 @@ describe("CustomerService", () => {
       expect(result).toEqual(customers);
       expect(customerRepository.findAll).toHaveBeenCalled();
     });
+    
+    it("should return an empty array if no customers exist", async () => {
+      // Arrange
+      (customerRepository.findAll as jest.Mock).mockResolvedValue([]);
+    
+      // Act
+      const result = await customerService.list();
+    
+      // Assert
+      expect(result).toEqual([]);
+      expect(customerRepository.findAll).toHaveBeenCalled();
+    });
+    
+    
   });
 
   describe("delete", () => {
@@ -568,6 +582,60 @@ describe("CustomerService", () => {
       await expect(customerService.addCredit(id, amount)).rejects.toThrow(
         CustomerNotFoundException
       );
+    });
+
+    it("should throw InvalidTypeException for id", async () => {
+      // Arrange
+      const invalidId = 12345;
+      const creditToAdd = 50;
+
+      (ValidationUtils.validateCustomerExists as jest.Mock).mockImplementation(
+        async () => {
+          throw new InvalidTypeException("id", "string", invalidId);
+        }
+      );      
+  
+      // Act & Assert
+      await expect(
+        customerService.addCredit(invalidId as any, creditToAdd)
+      ).rejects.toThrow(InvalidTypeException);
+    });
+  
+    it("should throw InvalidTypeException for amount", async () => {
+      // Arrange
+      const customerId = "12345";
+      const invalidAmount = "not-a-number";
+
+      (ValidationUtils.validateAvailableCredit as jest.Mock).mockImplementation(() => {
+        throw new InvalidTypeException("amount", "number", invalidAmount);
+      });      
+  
+      // Act & Assert
+      await expect(
+        customerService.addCredit(customerId, invalidAmount as any)
+      ).rejects.toThrow(InvalidTypeException);
+    });
+  
+    it("should throw NegativeCreditAmountException if amount is negative", async () => {
+      // Arrange
+      const customerId = "12345";
+      const negativeAmount = -50;
+  
+      (customerRepository.findById as jest.Mock).mockResolvedValue({
+        id: customerId,
+        name: "John Doe",
+        email: "john@example.com",
+        availableCredit: 100,
+      });
+
+      (ValidationUtils.validateAvailableCredit as jest.Mock).mockImplementation(() => {
+        throw new NegativeCreditAmountException();
+      });  
+  
+      // Act & Assert
+      await expect(
+        customerService.addCredit(customerId, negativeAmount)
+      ).rejects.toThrow(NegativeCreditAmountException);
     });
   });
 });

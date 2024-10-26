@@ -60,12 +60,12 @@ Good luck with the challenge! Enjoy it and do your best!
 
 # Requirements
 
-Read [Requirements](/docs/REQUIREMENTS.md) page for details.
+Please read the [Requirements](/docs/REQUIREMENTS.md) document for details.
 
 # Installation
 
-Read [Install](/docs/INSTALL.md) page for details.
+For installation instructions, see the [Installation Guide](/docs/INSTALL.md).
 
 # Usage
 
-Read [usage](/docs/USAGE.md) page for details.
+Check the [Usage Guide](/docs/USAGE.md) for information on using the API.

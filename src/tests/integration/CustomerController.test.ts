@@ -326,7 +326,7 @@ describe("CustomerController Integration Tests", () => {
     it("should return 404 if customer does not exist", async () => {
       const response = await request(app).delete(`/customers/invalid-id`);
       expect(response.status).toBe(404);
-    });
+    });    
   });
 
   describe("POST /customers/credit", () => {
@@ -368,6 +368,31 @@ describe("CustomerController Integration Tests", () => {
         .post("/customers/credit")
         .send({ id: newCustomer.body.id, amount: -50 });
       expect(response.status).toBe(452);
+    });
+
+    it("should add credit to an existing customer", async () => {
+      // Arrange
+      const newCustomer = await request(app).post("/customers").send({
+        name: "Credit Test",
+        email: "credit.test@example.com",
+        availableCredit: 200,
+      });
+    
+      const creditAmount = 150;
+    
+      // Act
+      const response = await request(app)
+        .post("/customers/credit")
+        .send({ id: newCustomer.body.id, amount: creditAmount });
+    
+      // Assert
+      expect(response.status).toBe(200);
+      expect(response.body).toMatchObject({
+        id: newCustomer.body.id,
+        name: "Credit Test",
+        email: "credit.test@example.com",
+        availableCredit: 350,
+      });
     });
   });
 

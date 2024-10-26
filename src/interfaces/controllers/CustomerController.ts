@@ -1,7 +1,6 @@
 import { Request, Response } from "express";
 import { CustomerService } from "../../application/CustomerService";
 import { isCustomError } from "../CustomError";
-import { InvalidTypeException } from "../../exceptions/InvalidTypeException";
 
 /**
  * @swagger
@@ -406,6 +405,10 @@ export class CustomerController {
    *                 summary: Missing customer ID
    *                 value:
    *                   error: "Customer ID is required."
+   *               invalidAmountError:
+   *                 summary: Invalid credit amount
+   *                 value:
+   *                   error: "Credit amount must be a positive number."
    *               creditAmountError:
    *                 summary: Negative credit not allowed
    *                 value:
@@ -420,6 +423,12 @@ export class CustomerController {
    *           application/json:
    *             example:
    *               error: "Customer not found."
+   *       452:
+   *         description: Negative credit amount not allowed
+   *         content:
+   *           application/json:
+   *             example:
+   *               error: "Credit amount cannot be negative."
    *       500:
    *         description: An unknown error occurred
    *         content:
@@ -510,7 +519,9 @@ export class CustomerController {
     const order = req.query.order as string | undefined;
 
     try {
-      const sortedCustomers = await this.customerService.sortCustomersByCredit(order);
+      const sortedCustomers = await this.customerService.sortCustomersByCredit(
+        order
+      );
       res.status(200).json(sortedCustomers);
     } catch (error) {
       const errorMessage =

@@ -3,37 +3,64 @@ service: motorbike-shop-api
 provider:
   name: aws
   runtime: nodejs18.x
-  stage: dev
+  stage: ${env:STAGE, 'dev'}
   region: us-east-1
+  environment:
+    MONGODB_URI: ${env:MONGODB_URI}
+    DB_NAME: ${env:DB_NAME}
+    COLLECTION_NAME: ${env:COLLECTION_NAME}
+  httpApi:
+    cors: true
 
 functions:
   createCustomer:
-    handler: handler.create
+    handler: src/infrastructure/ServerServerless.create
     events:
-      - http:
-          path: customers
+      - httpApi:
+          path: /customers
           method: post
 
   listCustomers:
-    handler: handler.list
+    handler: src/infrastructure/ServerServerless.list
     events:
-      - http:
-          path: customers
+      - httpApi:
+          path: /customers
           method: get
 
   updateCustomer:
-    handler: handler.update
+    handler: src/infrastructure/ServerServerless.update
     events:
-      - http:
-          path: customers/{id}
+      - httpApi:
+          path: /customers/{id}
           method: put
 
   deleteCustomer:
-    handler: handler.delete
+    handler: src/infrastructure/ServerServerless.deleteCustomer
     events:
-      - http:
-          path: customers/{id}
+      - httpApi:
+          path: /customers/{id}
           method: delete
-          
+
+  addCredit:
+    handler: src/infrastructure/ServerServerless.addCredit
+    events:
+      - httpApi:
+          path: /customers/credit
+          method: post
+
+  sortCustomersByCredit:
+    handler: src/infrastructure/ServerServerless.sortCustomersByCredit
+    events:
+      - httpApi:
+          path: /customers/sortByCredit
+          method: get
+
+  apiDocs:
+    handler: src/infrastructure/ServerServerless.apiDocs
+    events:
+      - httpApi:
+          path: /api-docs
+          method: get
+
 plugins:
   - serverless-offline
