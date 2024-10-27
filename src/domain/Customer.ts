@@ -104,6 +104,6 @@ export class Customer {
   private validate(): void {
     ValidationUtils.validateName(this.name);
     ValidationUtils.validateEmailFormat(this.email);
-    ValidationUtils.validateAvailableCredit(this.availableCredit);
+    ValidationUtils.validateAmount(this.availableCredit);
   }
 }

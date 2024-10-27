@@ -1,17 +1,17 @@
-import { CustomerService } from "../../application/CustomerService";
-import { CustomerRepositoryInterface } from "../../domain/repositories/CustomerRepositoryInterface";
-import { ValidationUtils } from "../../utils/ValidationUtils";
-import { Customer } from "../../domain/Customer";
-import { CustomerNotFoundException } from "../../exceptions/CustomerNotFoundException";
-import { EmailAlreadyInUseException } from "../../exceptions/EmailAlreadyInUseException";
-import { NegativeCreditAmountException } from "../../exceptions/NegativeCreditAmountException";
-import { InvalidTypeException } from "../../exceptions/InvalidTypeException";
-import { InvalidEmailFormatException } from "../../exceptions/InvalidEmailFormatException";
-import { NameTooShortException } from "../../exceptions/NameTooShortException";
-import { EmptyNameException } from "../../exceptions/EmptyNameException";
-import { InvalidSortOrderException } from "../../exceptions/InvalidSortOrderException";
+import { CustomerService } from "../../../application/CustomerService";
+import { CustomerRepositoryInterface } from "../../../domain/repositories/CustomerRepositoryInterface";
+import { ValidationUtils } from "../../../utils/ValidationUtils";
+import { Customer } from "../../../domain/Customer";
+import { CustomerNotFoundException } from "../../../exceptions/CustomerNotFoundException";
+import { EmailAlreadyInUseException } from "../../../exceptions/EmailAlreadyInUseException";
+import { NegativeCreditAmountException } from "../../../exceptions/NegativeCreditAmountException";
+import { InvalidTypeException } from "../../../exceptions/InvalidTypeException";
+import { InvalidEmailFormatException } from "../../../exceptions/InvalidEmailFormatException";
+import { NameTooShortException } from "../../../exceptions/NameTooShortException";
+import { EmptyNameException } from "../../../exceptions/EmptyNameException";
+import { InvalidSortOrderException } from "../../../exceptions/InvalidSortOrderException";
 
-jest.mock("../../utils/ValidationUtils");
+jest.mock("../../../utils/ValidationUtils");
 
 describe("CustomerService", () => {
   let customerRepository: CustomerRepositoryInterface;
@@ -46,7 +46,7 @@ describe("CustomerService", () => {
       (ValidationUtils.validateEmailNotInUse as jest.Mock).mockResolvedValue(
         true
       );
-      (ValidationUtils.validateAvailableCredit as jest.Mock).mockReturnValue(
+      (ValidationUtils.validateAmount as jest.Mock).mockReturnValue(
         true
       );
       (ValidationUtils.validateName as jest.Mock).mockReturnValue(true);
@@ -162,10 +162,10 @@ describe("CustomerService", () => {
       const email = "cubiczx@hotmail.com";
       const availableCredit = "1000";
 
-      (ValidationUtils.validateAvailableCredit as jest.Mock).mockImplementation(
+      (ValidationUtils.validateAmount as jest.Mock).mockImplementation(
         () => {
           throw new InvalidTypeException(
-            "availableCredit",
+            "amount",
             "number",
             availableCredit
           );
@@ -175,22 +175,6 @@ describe("CustomerService", () => {
       await expect(
         customerService.create(name, email, availableCredit as any)
       ).rejects.toThrow(InvalidTypeException);
-    });
-
-    it("should throw NegativeCreditAmountException if availableCredit is negative", async () => {
-      const name = "Xavier Palacín Ayuso";
-      const email = "cubiczx@hotmail.com";
-      const availableCredit = -1000;
-
-      (ValidationUtils.validateAvailableCredit as jest.Mock).mockImplementation(
-        () => {
-          throw new NegativeCreditAmountException();
-        }
-      );
-
-      await expect(
-        customerService.create(name, email, availableCredit)
-      ).rejects.toThrow(NegativeCreditAmountException);
     });
   });
 
@@ -374,6 +358,18 @@ describe("CustomerService", () => {
       await expect(
         customerService.update(id, name, email, invalidAvailableCredit as any)
       ).rejects.toThrow(InvalidTypeException);
+    });
+
+    it("should throw NegativeCreditAmountException if availableCredit is negative number", async () => {
+      const invalidAvailableCredit = -1000;
+
+      (ValidationUtils.validateAmount as jest.Mock).mockImplementation(() => {
+        throw new NegativeCreditAmountException();
+      });
+
+      await expect(
+        customerService.update(id, name, email, invalidAvailableCredit)
+      ).rejects.toThrow(NegativeCreditAmountException);
     });
   });
 

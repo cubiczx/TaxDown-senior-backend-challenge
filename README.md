@@ -72,18 +72,88 @@ Check the [Usage Guide](/docs/USAGE.md) for information on using the API.
 
 ## Test Coverage
 
-The following coverage results represent the integration test suite (`src/tests/integration/CustomerController.test.ts`):
+The following coverage results represent the integration test suite (`src/tests/integration/interfaces/controllers/CustomerController.test.ts`):
 
 | Test Type            | Statements | Branches | Functions | Lines |
 |----------------------|------------|----------|-----------|-------|
 | **Unit Tests** | 84.48%    | 54.54%   | 100%    | 84.48%|
 | **Integration Tests** | 55.52%  | 56.25%   | 57.27%    | 56.58%|
 
-The following coverage results represent the integration test suite (`src/tests/unit/CustomerService.test.ts`):
+The following coverage results represent the integration test suite (`src/tests/unit/application/CustomerService.test.ts`):
 
 | Test Type            | Statements | Branches | Functions | Lines |
 |----------------------|------------|----------|-----------|-------|
 | **Unit Tests** | 100%    | 100%   | 100%    | 100%|
 | **Integration Tests** | 23.11%  | 15.62%   | 25.45%    | 23.77%|
+
+The following coverage results represent the integration test suite (`src/tests/unit/infrastructure/persistence/repositories/MongoDBCustomerRepository.test.ts`):
+
+| Test Type            | Statements | Branches | Functions | Lines |
+|----------------------|------------|----------|-----------|-------|
+| **Unit Tests** | 85.41%    | 80%   | 76.92%    | 85.41%|
+| **Integration Tests** | 21.35%  | 12.5%   | 20%    | 21.96%|
+
+The following coverage results represent the integration test suite (`src/tests/unit/infrastructure/persistence/repositories/InMemoryCustomerRepository.test`):
+
+| Test Type            | Statements | Branches | Functions | Lines |
+|----------------------|------------|----------|-----------|-------|
+| **Unit Tests** | 85.71%    | 100%   | 78.57%    | 89.47%|
+| **Integration Tests** | 14.82%  | 7.81%   | 19.09%    | 14.98%|
+
+The following coverage results represent the integration test suite (`src/tests/unit/domain/Customer.test.ts`):
+
+| Test Type            | Statements | Branches | Functions | Lines |
+|----------------------|------------|----------|-----------|-------|
+| **Unit Tests** | 100%    | 0%   | 100%    | 100%|
+| **Integration Tests** | 12.31%  | 0%   | 13.63%    | 12.66%|
+
+The following coverage results represent the integration test suite (`src/tests/unit/exceptions/CustomerNotFoundException.test.ts`):
+
+| Test Type            | Statements | Branches | Functions | Lines |
+|----------------------|------------|----------|-----------|-------|
+| **Unit Tests** | 100%    | 0%   | 100%    | 100%|
+| **Integration Tests** | 0.75%  | 0%   | 0.9%    | 0.77%|
+
+The following coverage results represent the integration test suite (`src/tests/unit/exceptions/EmailAlreadyInUseException.test.ts`):
+
+| Test Type            | Statements | Branches | Functions | Lines |
+|----------------------|------------|----------|-----------|-------|
+| **Unit Tests** | 100%    | 0%   | 100%    | 100%|
+| **Integration Tests** | 0.75%  | 0%   | 0.9%    | 0.77%|
+
+The following coverage results represent the integration test suite (`src/tests/unit/exceptions/InvalidEmailFormatException.test.ts`):
+
+| Test Type            | Statements | Branches | Functions | Lines |
+|----------------------|------------|----------|-----------|-------|
+| **Unit Tests** | 100%    | 0%   | 100%    | 100%|
+| **Integration Tests** | 0.75%  | 0%   | 0.9%    | 0.77%|
+
+The following coverage results represent the integration test suite (`src/tests/unit/exceptions/InvalidSortOrderException.test.ts`):
+
+| Test Type            | Statements | Branches | Functions | Lines |
+|----------------------|------------|----------|-----------|-------|
+| **Unit Tests** | 100%    | 0%   | 100%    | 100%|
+| **Integration Tests** | 0.75%  | 0%   | 0.9%    | 0.77%|
+
+The following coverage results represent the integration test suite (`src/tests/unit/exceptions/InvalidTypeException.test.ts`):
+
+| Test Type            | Statements | Branches | Functions | Lines |
+|----------------------|------------|----------|-----------|-------|
+| **Unit Tests** | 100%    | 0%   | 100%    | 100%|
+| **Integration Tests** | 0.75%  | 0%   | 0.9%    | 0.77%|
+
+The following coverage results represent the integration test suite (`src/tests/unit/exceptions/NameTooShortException.test.ts`):
+
+| Test Type            | Statements | Branches | Functions | Lines |
+|----------------------|------------|----------|-----------|-------|
+| **Unit Tests** | 100%    | 0%   | 100%    | 100%|
+| **Integration Tests** | 0.75%  | 0%   | 0.9%    | 0.77%|
+
+The following coverage results represent the integration test suite (`src/tests/unit/exceptions/NegativeCreditAmountException.test`):
+
+| Test Type            | Statements | Branches | Functions | Lines |
+|----------------------|------------|----------|-----------|-------|
+| **Unit Tests** | 100%    | 0%   | 100%    | 100%|
+| **Integration Tests** | 0.75%  | 0%   | 0.9%    | 0.77%|
 
 > Detailed coverage results can be found in the `coverage` folder generated after running tests.

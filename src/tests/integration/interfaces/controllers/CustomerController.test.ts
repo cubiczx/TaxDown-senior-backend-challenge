@@ -1,7 +1,7 @@
 import request from "supertest";
-import { app } from "../../infrastructure/Server";
-import { InMemoryCustomerRepository } from "../../infrastructure/persistence/repositories/InMemoryCustomerRepository";
-import { Customer } from "../../domain/Customer";
+import { app } from "../../../../infrastructure/Server";
+import { InMemoryCustomerRepository } from "../../../../infrastructure/persistence/repositories/InMemoryCustomerRepository";
+import { Customer } from "../../../../domain/Customer";
 
 describe("CustomerController Integration Tests", () => {
   let customerRepository: InMemoryCustomerRepository;
@@ -170,6 +170,7 @@ describe("CustomerController Integration Tests", () => {
         .put(`/customers/${newCustomer.body.id}`)
         .send(updateData);
       expect(response.status).toBe(200);
+      expect(response.body.name).toBe("John Smith Updated");
     });
 
     it("should update one field of an existing customer", async () => {
@@ -334,6 +335,11 @@ describe("CustomerController Integration Tests", () => {
 
     it("should return 404 if customer does not exist", async () => {
       const response = await request(app).delete(`/customers/invalid-id`);
+      expect(response.status).toBe(404);
+    });
+
+    it("should return 404 if trying to delete a non-existent customer", async () => {
+      const response = await request(app).delete('/customers/invalid-id');
       expect(response.status).toBe(404);
     });
   });
