@@ -10,7 +10,9 @@
     "devExpress": "ts-node src/infrastructure/Server.ts",
     "dev": "serverless offline",
     "test": "jest",
-    "test:watch": "jest --watch"
+    "test:watch": "jest --watch",
+    "test:integration": "jest src/tests/integration",
+    "test:unit": "jest src/tests/unit"
   },
   "repository": {
     "type": "git",

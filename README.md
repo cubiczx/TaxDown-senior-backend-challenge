@@ -69,3 +69,21 @@ For installation instructions, see the [Installation Guide](/docs/INSTALL.md).
 # Usage
 
 Check the [Usage Guide](/docs/USAGE.md) for information on using the API.
+
+## Test Coverage
+
+The following coverage results represent the integration test suite (`src/tests/integration/CustomerController.test.ts`):
+
+| Test Type            | Statements | Branches | Functions | Lines |
+|----------------------|------------|----------|-----------|-------|
+| **Unit Tests** | 84.48%    | 54.54%   | 100%    | 84.48%|
+| **Integration Tests** | 55.52%  | 56.25%   | 57.27%    | 56.58%|
+
+The following coverage results represent the integration test suite (`src/tests/unit/CustomerService.test.ts`):
+
+| Test Type            | Statements | Branches | Functions | Lines |
+|----------------------|------------|----------|-----------|-------|
+| **Unit Tests** | 100%    | 100%   | 100%    | 100%|
+| **Integration Tests** | 23.11%  | 15.62%   | 25.45%    | 23.77%|
+
+> Detailed coverage results can be found in the `coverage` folder generated after running tests.
