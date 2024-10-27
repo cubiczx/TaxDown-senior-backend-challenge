@@ -79,6 +79,13 @@ The following coverage results represent the integration test suite (`src/tests/
 | **Unit Tests** | 84.48%    | 54.54%   | 100%    | 84.48%|
 | **Integration Tests** | 55.52%  | 56.25%   | 57.27%    | 56.58%|
 
+The following coverage results represent the integration test suite (`src/tests/integration/interfaces/controllers/CustomerControllerLambda.test.ts`):
+
+| Test Type            | Statements | Branches | Functions | Lines |
+|----------------------|------------|----------|-----------|-------|
+| **Unit Tests** | 61.22%    | 9.09%   | 70%    | 61.22%|
+| **Integration Tests** | 32.91%  | 17.18%   | 36.36%    | 33.33%|
+
 The following coverage results represent the integration test suite (`src/tests/unit/application/CustomerService.test.ts`):
 
 | Test Type            | Statements | Branches | Functions | Lines |
