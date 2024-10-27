@@ -118,6 +118,61 @@ export class CustomerControllerLambda {
   /**
    * @swagger
    * /customers/{id}:
+   *   get:
+   *     summary: Retrieve a customer by ID
+   *     description: Retrieves a specific customer by their ID.
+   *     parameters:
+   *       - name: id
+   *         in: path
+   *         required: true
+   *         description: The ID of the customer to retrieve
+   *         schema:
+   *           type: string
+   *     responses:
+   *       200:
+   *         description: Customer retrieved successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 id:
+   *                   type: string
+   *                 name:
+   *                   type: string
+   *                 email:
+   *                   type: string
+   *                 availableCredit:
+   *                   type: number
+   *       404:
+   *         description: Customer not found
+   *       500:
+   *         description: Internal server error
+   */
+  async getCustomerLambda(req: any): Promise<APIGatewayProxyResult> {
+    try {
+      const { id } = req.pathParameters;
+      const customer = await this.customerService.findById(id);
+
+      if (!customer) {
+        return {
+          statusCode: 404,
+          body: JSON.stringify({ message: "Customer not found." }),
+        };
+      }
+
+      return {
+        statusCode: 200,
+        body: JSON.stringify(customer),
+      };
+    } catch (error) {
+      return this.handleErrorLambda(error);
+    }
+  }
+
+  /**
+   * @swagger
+   * /customers/{id}:
    *   put:
    *     summary: Update a customer
    *     description: Updates an existing customer in the system.

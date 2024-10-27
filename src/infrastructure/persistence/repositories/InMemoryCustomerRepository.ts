@@ -29,7 +29,7 @@ export class InMemoryCustomerRepository implements CustomerRepositoryInterface {
    * @returns A promise that resolves to the customer if found, or undefined if not.
    */
   async findById(id: string): Promise<Customer | undefined> {
-    return this.customers.find((customer) => customer.id === id);
+    return this.customers.find((customer) => customer.getId() === id);
   }
 
   /**
@@ -38,14 +38,16 @@ export class InMemoryCustomerRepository implements CustomerRepositoryInterface {
    * @returns A promise that resolves to the customer if found, or undefined if not.
    */
   async findByEmail(email: string): Promise<Customer | undefined> {
-    return this.customers.find((customer) => customer.email === email);
+    return this.customers.find((customer) => customer.getEmail() === email);
   }
 
   /**
    * Updates a customer in the repository.
    */
   async update(customer: Customer): Promise<Customer> {
-    const index = this.customers.findIndex((c) => c.id === customer.id);
+    const index = this.customers.findIndex(
+      (c) => c.getId() === customer.getId()
+    );
     if (index !== -1) {
       this.customers[index] = customer;
       return customer;
@@ -59,7 +61,9 @@ export class InMemoryCustomerRepository implements CustomerRepositoryInterface {
    * @returns A promise that resolves when the customer is deleted.
    */
   async delete(id: string): Promise<void> {
-    this.customers = this.customers.filter((customer) => customer.id !== id);
+    this.customers = this.customers.filter(
+      (customer) => customer.getId() !== id
+    );
   }
 
   /**
@@ -69,7 +73,7 @@ export class InMemoryCustomerRepository implements CustomerRepositoryInterface {
    */
   async findByAvailableCredit(minCredit: number): Promise<Customer[]> {
     return this.customers.filter(
-      (customer) => customer.availableCredit >= minCredit
+      (customer) => customer.getAvailableCredit() >= minCredit
     );
   }
 

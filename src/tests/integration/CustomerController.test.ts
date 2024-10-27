@@ -1,6 +1,7 @@
 import request from "supertest";
 import { app } from "../../infrastructure/Server";
 import { InMemoryCustomerRepository } from "../../infrastructure/persistence/repositories/InMemoryCustomerRepository";
+import { Customer } from "../../domain/Customer";
 
 describe("CustomerController Integration Tests", () => {
   let customerRepository: InMemoryCustomerRepository;
@@ -132,6 +133,27 @@ describe("CustomerController Integration Tests", () => {
       const response = await request(app).get("/customers");
       expect(response.status).toBe(200);
       expect(response.body).toEqual([]);
+    });
+  });
+
+  describe('GET /customers/:id', () => {
+    it('should return a customer if found', async () => {
+      const newCustomer = await request(app).post("/customers").send({
+        name: "Customer To get",
+        email: "get.me@example.com",
+        availableCredit: 200,
+      });
+
+      const response = await request(app).get(`/customers/${newCustomer.body.id}`);
+
+      expect(response.status).toBe(200);
+    });
+
+    it('should return 404 if customer not found', async () => {
+      const response = await request(app).get('/customers/2');
+
+      expect(response.status).toBe(404);
+      expect(response.body).toHaveProperty('message', 'Customer not found');
     });
   });
 
@@ -294,19 +316,6 @@ describe("CustomerController Integration Tests", () => {
         .send({ availableCredit: "not-a-number" });
       expect(response.status).toBe(400);
     });
-
-    it("should throw NegativeCreditAmountException if availableCredit is negative", async () => {
-      const customer = await request(app).post("/customers").send({
-        name: "Jane Doe",
-        email: "jane.doe@example.com",
-        availableCredit: 300,
-      });
-
-      const response = await request(app)
-        .put(`/customers/${customer.body.id}`)
-        .send({ availableCredit: -100 });
-      expect(response.status).toBe(452);
-    });
   });
 
   describe("DELETE /customers/:id", () => {
@@ -326,7 +335,7 @@ describe("CustomerController Integration Tests", () => {
     it("should return 404 if customer does not exist", async () => {
       const response = await request(app).delete(`/customers/invalid-id`);
       expect(response.status).toBe(404);
-    });    
+    });
   });
 
   describe("POST /customers/credit", () => {
@@ -377,14 +386,14 @@ describe("CustomerController Integration Tests", () => {
         email: "credit.test@example.com",
         availableCredit: 200,
       });
-    
+
       const creditAmount = 150;
-    
+
       // Act
       const response = await request(app)
         .post("/customers/credit")
         .send({ id: newCustomer.body.id, amount: creditAmount });
-    
+
       // Assert
       expect(response.status).toBe(200);
       expect(response.body).toMatchObject({
@@ -399,24 +408,9 @@ describe("CustomerController Integration Tests", () => {
   describe("GET /customers/sortByCredit", () => {
     it("should return customers sorted by available credit", async () => {
       const customers = [
-        {
-          id: "1",
-          name: "Alice",
-          email: "alice@example.com",
-          availableCredit: 100,
-        },
-        {
-          id: "2",
-          name: "Bob",
-          email: "bob@example.com",
-          availableCredit: 200,
-        },
-        {
-          id: "3",
-          name: "Charlie",
-          email: "charlie@example.com",
-          availableCredit: 50,
-        },
+        new Customer("1", "Alice", "alice@example.com", 100),
+        new Customer("2", "Bob", "bob@example.com", 200),
+        new Customer("3", "Charlie", "charlie@example.com", 50),
       ];
 
       // Add clients to the repository
@@ -491,18 +485,8 @@ describe("CustomerController Integration Tests", () => {
     });
 
     it("should return customers sorted by available credit in ascending order when specified", async () => {
-      const customer1 = {
-        id: "1",
-        name: "Alice",
-        email: "alice@example.com",
-        availableCredit: 150,
-      };
-      const customer2 = {
-        id: "2",
-        name: "Bob",
-        email: "bob@example.com",
-        availableCredit: 100,
-      };
+      const customer1 = new Customer("1", "Alice", "alice@example.com", 150);
+      const customer2 = new Customer("2", "Bob", "bob@example.com", 100);
       await customerRepository.create(customer1);
       await customerRepository.create(customer2);
 

@@ -11,6 +11,7 @@ provider:
     COLLECTION_NAME: ${env:COLLECTION_NAME}
   httpApi:
     cors: true
+  timeout: 30
 
 functions:
   createCustomer:
@@ -25,6 +26,20 @@ functions:
     events:
       - httpApi:
           path: /customers
+          method: get
+
+  sortCustomersByCredit:
+    handler: src/infrastructure/ServerServerless.sortCustomersByCredit
+    events:
+      - httpApi:
+          path: /customers/sortByCredit
+          method: get
+
+  getCustomer:
+    handler: src/infrastructure/ServerServerless.getCustomer
+    events:
+      - httpApi:
+          path: /customers/{id}
           method: get
 
   updateCustomer:
@@ -47,13 +62,6 @@ functions:
       - httpApi:
           path: /customers/credit
           method: post
-
-  sortCustomersByCredit:
-    handler: src/infrastructure/ServerServerless.sortCustomersByCredit
-    events:
-      - httpApi:
-          path: /customers/sortByCredit
-          method: get
 
   apiDocs:
     handler: src/infrastructure/ServerServerless.apiDocs

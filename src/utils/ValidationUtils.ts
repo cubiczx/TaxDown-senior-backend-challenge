@@ -27,17 +27,11 @@ export class ValidationUtils {
   }
 
   /**
-   * Validates the provided email to ensure it is in the correct format and not already in use.
+   * Validates the format of the provided email.
    * Throws InvalidEmailFormatException if the email is not in the correct format.
-   * Throws EmailAlreadyInUseException if the email is already in use.
-   * @param {string} email - The email to validate
-   * @param {CustomerRepositoryInterface} customerRepository - The repository to check for existing customers
-   * @returns {Promise<void>} - Resolves if the email is valid, rejects with an appropriate error if not
+   * @param {string} email - The email to validate format
    */
-  static async validateEmail(
-    email: string,
-    customerRepository: CustomerRepositoryInterface
-  ): Promise<void> {
+  static validateEmailFormat(email: string): void {
     if (typeof email !== "string") {
       throw new InvalidTypeException("email", "string", email);
     }
@@ -45,7 +39,18 @@ export class ValidationUtils {
     if (!emailRegex.test(email)) {
       throw new InvalidEmailFormatException();
     }
+  }
 
+  /**
+   * Checks if the provided email is already in use in the repository.
+   * Throws EmailAlreadyInUseException if the email is already in use.
+   * @param {string} email - The email to check
+   * @param {CustomerRepositoryInterface} customerRepository - The repository to check for existing customers
+   */
+  static async validateEmailNotInUse(
+    email: string,
+    customerRepository: CustomerRepositoryInterface
+  ): Promise<void> {
     const existingCustomer = await customerRepository.findByEmail(email);
     if (existingCustomer) {
       throw new EmailAlreadyInUseException();
@@ -70,15 +75,23 @@ export class ValidationUtils {
   }
 
   /**
-   * Validates the given credit amount to ensure it is a positive number.
-   * Throws InvalidCreditAmountException if the credit amount is not a number.
-   * Throws NegativeCreditAmountException if the credit amount is negative.
-   * @param {number} amount - The amount of credit to validate
+   * Validates that the given amount is of type number.
+   * Throws InvalidTypeException if the amount is not a number.
+   * @param {number} amount - The amount to validate
    */
-  static validateAvailableCredit(amount: number): void {
+  static validateAmount(amount: number): void {
     if (typeof amount !== "number" || isNaN(amount)) {
       throw new InvalidTypeException("amount", "number", amount);
     }
+  }
+
+  /**
+   * Validates that the given amount is a positive number.
+   * Throws NegativeCreditAmountException if the amount is negative.
+   * @param {number} amount - The amount of credit to validate
+   */
+  static validateAvailableCredit(amount: number): void {
+    this.validateAmount(amount); // Ensure it's a number first
     if (amount < 0) {
       throw new NegativeCreditAmountException();
     }

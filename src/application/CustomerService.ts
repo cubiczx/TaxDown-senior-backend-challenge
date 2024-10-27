@@ -13,7 +13,7 @@ export class CustomerService {
 
   /**
    * Creates a new customer with the given name, email, and available credit.
-   * Performs input validation and checks that the email is not already in use.
+   * Only checks that the email is not already in use.
    * @param {string} name - The customer's name
    * @param {string} email - The customer's email
    * @param {number} availableCredit - The customer's available credit
@@ -24,11 +24,10 @@ export class CustomerService {
     email: string,
     availableCredit: number
   ): Promise<Customer> {
-    ValidationUtils.validateName(name);
-    ValidationUtils.validateAvailableCredit(availableCredit);
-    await ValidationUtils.validateEmail(email, this.customerRepository);
+    // Check if the email is already in use
+    await ValidationUtils.validateEmailNotInUse(email, this.customerRepository);
 
-    // Create a new Customer object
+    // Create a new Customer object (validation occurs in the Customer constructor)
     const customer = new Customer(
       this.generateUniqueId(),
       name,
@@ -42,11 +41,20 @@ export class CustomerService {
   }
 
   /**
-   * Retrieves a list of all customers from the repository
+   * Retrieves a list of all customers from the repository.
    * @returns {Promise<Customer[]>} - A list of all customers
    */
   async list(): Promise<Customer[]> {
     return this.customerRepository.findAll();
+  }
+
+  /**
+   * Retrieves a customer by their ID.
+   * @param {string} id - The ID of the customer to find
+   * @returns {Promise<Customer | undefined>} - The found customer if successful, or undefined if not
+   */
+  async findById(id: string): Promise<Customer | undefined> {
+    return this.customerRepository.findById(id);
   }
 
   /**
@@ -71,37 +79,35 @@ export class CustomerService {
       throw new CustomerNotFoundException();
     }
 
-    // Validate and update name if provided
+    // Validate and update properties only if provided
     if (name !== undefined) {
-      ValidationUtils.validateName(name);
-      customer.name = name; // Update the customer's name
+      customer.setName(name);
     }
 
-    // Validate and update email if provided
-    if (email !== undefined && customer.email !== email) {
-      await ValidationUtils.validateEmail(email, this.customerRepository);
-      customer.email = email; // Update the customer's email
+    if (email !== undefined && customer.getEmail() !== email) {
+      await ValidationUtils.validateEmailNotInUse(
+        email,
+        this.customerRepository
+      );
+      customer.setEmail(email);
     }
 
-    // Validate and update availableCredit if provided
     if (availableCredit !== undefined) {
-      ValidationUtils.validateAvailableCredit(availableCredit);
-      customer.availableCredit = availableCredit; // Update the customer's available credit
+      customer.setAvailableCredit(availableCredit);
     }
 
-    // Save changes
+    // Save the updated customer
     await this.customerRepository.update(customer);
     return customer;
   }
 
   /**
-   * Deletes a customer by ID
+   * Deletes a customer by ID.
    * @param {string} id - ID of the customer to delete
    * @returns {Promise<void>} - Resolves when the customer is deleted
    */
   async delete(id: string): Promise<void> {
     await ValidationUtils.validateCustomerExists(id, this.customerRepository);
-
     await this.customerRepository.delete(id);
   }
 
@@ -109,20 +115,17 @@ export class CustomerService {
    * Adds the given amount to the customer's available credit.
    * @param {string} id - ID of the customer to add credit to
    * @param {number} amount - Amount of credit to add (must be positive)
-   * @returns {Promise<Customer | null>} - The updated customer if successful, or null if the customer could not be found
+   * @returns {Promise<Customer>} - The updated customer if successful
    */
-  async addCredit(id: string, amount: number): Promise<Customer | null> {
+  async addCredit(id: string, amount: number): Promise<Customer> {
     await ValidationUtils.validateCustomerExists(id, this.customerRepository);
-    ValidationUtils.validateAvailableCredit(amount);
 
     const customer = await this.customerRepository.findById(id);
     if (!customer) {
       throw new CustomerNotFoundException();
     }
 
-    customer.availableCredit += amount;
-
-    // Update the customer's credit in the repository
+    customer.addCredit(amount);
     await this.customerRepository.update(customer);
     return customer;
   }
@@ -132,18 +135,14 @@ export class CustomerService {
    * @param {string} [order="desc"] - The order to sort the customers by (either "asc" or "desc")
    * @returns {Promise<Customer[]>} - A promise that resolves to an array of customers sorted by available credit
    */
-  async sortCustomersByCredit(
-    order: string | undefined = "desc"
-  ): Promise<Customer[]> {
+  async sortCustomersByCredit(order: string = "desc"): Promise<Customer[]> {
     const validOrder = ValidationUtils.validateSortOrder(order);
     const customers = await this.customerRepository.findAll();
 
     return customers.sort((a, b) => {
-      if (validOrder === "asc") {
-        return a.availableCredit - b.availableCredit;
-      } else {
-        return b.availableCredit - a.availableCredit;
-      }
+      return validOrder === "asc"
+        ? a.getAvailableCredit() - b.getAvailableCredit()
+        : b.getAvailableCredit() - a.getAvailableCredit();
     });
   }
 }

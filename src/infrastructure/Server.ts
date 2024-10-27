@@ -44,6 +44,12 @@ app.post("/customers", (req: Request, res: Response) =>
 app.get("/customers", (req: Request, res: Response) =>
   customerController.listCustomers(req, res)
 );
+app.get("/customers/sortByCredit", (req: Request, res: Response) =>
+  customerController.sortCustomersByCredit(req, res)
+);
+app.get("/customers/:id", (req: Request, res: Response) =>
+  customerController.getCustomerById(req, res)
+);
 app.put("/customers/:id", (req: Request, res: Response) =>
   customerController.updateCustomer(req, res)
 );
@@ -52,9 +58,6 @@ app.delete("/customers/:id", (req: Request, res: Response) =>
 );
 app.post("/customers/credit", (req: Request, res: Response) =>
   customerController.addCredit(req, res)
-);
-app.get("/customers/sortByCredit", (req: Request, res: Response) =>
-  customerController.sortCustomersByCredit(req, res)
 );
 
 // Error handling

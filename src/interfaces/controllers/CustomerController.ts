@@ -174,6 +174,73 @@ export class CustomerController {
   /**
    * @swagger
    * /customers/{id}:
+   *   get:
+   *     tags: [Customers]
+   *     summary: Retrieve a customer by ID
+   *     parameters:
+   *       - name: id
+   *         in: path
+   *         required: true
+   *         description: ID of the customer to retrieve
+   *         schema:
+   *           type: string
+   *           example: "123456"
+   *     responses:
+   *       200:
+   *         description: The requested customer
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 id:
+   *                   type: string
+   *                   description: Customer ID
+   *                   example: "123456"
+   *                 name:
+   *                   type: string
+   *                   description: Customer name
+   *                   example: "Xavier Palacín Ayuso"
+   *                 email:
+   *                   type: string
+   *                   description: Customer email
+   *                   example: "john.doe@example.com"
+   *                 availableCredit:
+   *                   type: number
+   *                   description: Available credit for the customer
+   *                   example: 500.0
+   *       404:
+   *         description: Customer not found
+   *         content:
+   *           application/json:
+   *             example:
+   *               message: "Customer not found"
+   *       500:
+   *         description: An unknown error occurred while retrieving the customer
+   *         content:
+   *           application/json:
+   *             example:
+   *               message: "Internal Server Error"
+   */
+  async getCustomerById(req: Request, res: Response): Promise<void> {
+    const { id } = req.params;
+  
+    try {
+      const customer = await this.customerService.findById(id);
+      if (!customer) {
+        res.status(404).json({ message: "Customer not found" });
+        return;
+      }
+      res.status(200).json(customer);
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: "Internal Server Error" });
+    }
+  }
+  
+  /**
+   * @swagger
+   * /customers/{id}:
    *   put:
    *     tags: [Customers]
    *     summary: Update a customer

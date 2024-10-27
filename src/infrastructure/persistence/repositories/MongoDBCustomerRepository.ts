@@ -9,10 +9,10 @@ export class MongoDBCustomerRepository implements CustomerRepositoryInterface {
   private collectionName: string;
 
   /**
-   * Initializes a new instance of the MongoDBCustomerRepository class.
-   * @param uri The URI of the MongoDB server.
-   * @param dbName The name of the database to use.
-   * @param collectionName The name of the collection to interact with.
+   * Creates a new instance of the MongoDBCustomerRepository class.
+   * @param uri The MongoDB connection URI.
+   * @param dbName The name of the database to connect to.
+   * @param collectionName The name of the collection to use for customers.
    */
   constructor(uri: string, dbName: string, collectionName: string) {
     this.client = new MongoClient(uri);
@@ -21,8 +21,7 @@ export class MongoDBCustomerRepository implements CustomerRepositoryInterface {
   }
 
   /**
-   * Establishes a connection to the MongoDB server.
-   * The connection is not closed until disconnect is called.
+   * Connects to the MongoDB database.
    * @returns A promise that resolves when the connection is established.
    */
   async connect() {
@@ -30,69 +29,85 @@ export class MongoDBCustomerRepository implements CustomerRepositoryInterface {
   }
 
   /**
-   * Closes the connection to the MongoDB server.
-   * This should be called to release database resources
-   * when operations are complete.
+   * Disconnects from the MongoDB database.
    * @returns A promise that resolves when the connection is closed.
    */
-
   async disconnect() {
     await this.client.close();
   }
 
   /**
-   * Creates a new customer with the given information.
-   * @param customer The customer to create.
-   * @returns A promise that resolves when the customer is created.
+   * Creates a new customer in the MongoDB database.
+   * @param customer The Customer object to create.
+   * @returns The created Customer object with its new ID.
    */
   async create(customer: Customer): Promise<Customer> {
     await this.connect();
     const db = this.client.db(this.dbName);
-    await db.collection(this.collectionName).insertOne(customer);
-    return customer;
+
+    const result = await db.collection(this.collectionName).insertOne({
+      name: customer.getName(),
+      email: customer.getEmail(),
+      availableCredit: customer.getAvailableCredit(),
+    });
+
+    return new Customer(
+      result.insertedId.toString(),
+      customer.getName(),
+      customer.getEmail(),
+      customer.getAvailableCredit()
+    );
   }
 
   /**
-   * Retrieves a list of all customers from the repository.
-   * @returns A promise that resolves to a list of all customers
+   * Retrieves all customers from the MongoDB database.
+   * @returns An array of Customer objects.
    */
   async findAll(): Promise<Customer[]> {
     await this.connect();
     const db = this.client.db(this.dbName);
     const customers = await db.collection(this.collectionName).find().toArray();
-    return customers.map((customer: WithId<Document>) => ({
-      id: customer._id.toString(),
-      name: customer.name,
-      email: customer.email,
-      availableCredit: customer.availableCredit,
-    }));
+
+    return customers.map(
+      (customer: WithId<Document>) =>
+        new Customer(
+          customer._id.toString(),
+          customer.name,
+          customer.email,
+          customer.availableCredit
+        )
+    );
   }
 
   /**
-   * Retrieves a customer by ID.
+   * Finds a customer by their ID.
    * @param id The ID of the customer to find.
-   * @returns A promise that resolves to the customer if found, or undefined if not.
+   * @returns The Customer object if found.
+   * @throws CustomerNotFoundException if the customer is not found.
    */
-  async findById(id: string): Promise<Customer | undefined> {
+  async findById(id: string): Promise<Customer> {
     await this.connect();
     const db = this.client.db(this.dbName);
     const customer = await db
       .collection(this.collectionName)
       .findOne({ _id: new ObjectId(id) });
-    return customer
-      ? {
-          id: customer._id.toString(),
-          name: customer.name,
-          email: customer.email,
-          availableCredit: customer.availableCredit,
-        }
-      : undefined;
+
+    if (!customer) {
+      throw new CustomerNotFoundException();
+    }
+
+    return new Customer(
+      customer._id.toString(),
+      customer.name,
+      customer.email,
+      customer.availableCredit
+    );
   }
 
   /**
-   * Retrieves a customer by email.
+   * Finds a customer by their email.
    * @param email The email of the customer to find.
-   * @returns A promise that resolves to the customer if found, or undefined if not.
+   * @returns The Customer object if found, or undefined if not.
    */
   async findByEmail(email: string): Promise<Customer | undefined> {
     await this.connect();
@@ -100,34 +115,35 @@ export class MongoDBCustomerRepository implements CustomerRepositoryInterface {
     const customer = await db
       .collection(this.collectionName)
       .findOne({ email });
+
     return customer
-      ? {
-          id: customer._id.toString(),
-          name: customer.name,
-          email: customer.email,
-          availableCredit: customer.availableCredit,
-        }
+      ? new Customer(
+          customer._id.toString(),
+          customer.name,
+          customer.email,
+          customer.availableCredit
+        )
       : undefined;
   }
 
   /**
-   * Updates a customer in the repository.
-   * @param customer The customer to update.
-   * @returns A promise that resolves to the updated customer if found, or throws CustomerNotFoundException if not.
+   * Updates an existing customer in the MongoDB database.
+   * @param customer The Customer object with updated information.
+   * @returns The updated Customer object.
+   * @throws CustomerNotFoundException if the customer is not found.
    */
   async update(customer: Customer): Promise<Customer> {
     await this.connect();
     const db = this.client.db(this.dbName);
-    const objectId = new ObjectId(customer.id);
+    const objectId = new ObjectId(customer.getId());
 
     const result = await db.collection(this.collectionName).findOneAndUpdate(
-      //{ _id: new ObjectId(customer.id) }, // Asegúrate de que el ID sea un ObjectId
       { _id: objectId },
       {
         $set: {
-          name: customer.name,
-          email: customer.email,
-          availableCredit: customer.availableCredit,
+          name: customer.getName(),
+          email: customer.getEmail(),
+          availableCredit: customer.getAvailableCredit(),
         },
       },
       { returnDocument: "after" }
@@ -137,26 +153,24 @@ export class MongoDBCustomerRepository implements CustomerRepositoryInterface {
       throw new CustomerNotFoundException();
     }
 
-    return {
-      id: result._id.toString(),
-      name: result.name,
-      email: result.email,
-      availableCredit: result.availableCredit,
-    };
+    return new Customer(
+      result._id.toString(),
+      result.name,
+      result.email,
+      result.availableCredit
+    );
   }
 
   /**
-   * Deletes a customer by ID.
+   * Deletes a customer from the MongoDB database.
    * @param id The ID of the customer to delete.
-   * @returns A promise that resolves when the customer is deleted.
-   * @throws CustomerNotFoundException if the customer does not exist.
+   * @throws CustomerNotFoundException if the customer is not found.
    */
   async delete(id: string): Promise<void> {
     await this.connect();
     const db = this.client.db(this.dbName);
     const result = await db
       .collection(this.collectionName)
-
       .deleteOne({ _id: new ObjectId(id) });
 
     if (result.deletedCount === 0) {
@@ -165,9 +179,9 @@ export class MongoDBCustomerRepository implements CustomerRepositoryInterface {
   }
 
   /**
-   * Retrieves a list of customers with available credit greater than or equal to the specified amount.
-   * @param minCredit The minimum available credit to filter customers by.
-   * @returns A promise that resolves to an array of customers meeting the credit criteria.
+   * Finds customers with available credit greater than or equal to the specified amount.
+   * @param minCredit The minimum available credit to search for.
+   * @returns An array of Customer objects that meet the criteria.
    */
   async findByAvailableCredit(minCredit: number): Promise<Customer[]> {
     await this.connect();
@@ -176,18 +190,20 @@ export class MongoDBCustomerRepository implements CustomerRepositoryInterface {
       .collection(this.collectionName)
       .find({ availableCredit: { $gte: minCredit } })
       .toArray();
-    return customers.map((customer: WithId<Document>) => ({
-      id: customer._id.toString(),
-      name: customer.name,
-      email: customer.email,
-      availableCredit: customer.availableCredit,
-    }));
+
+    return customers.map(
+      (customer: WithId<Document>) =>
+        new Customer(
+          customer._id.toString(),
+          customer.name,
+          customer.email,
+          customer.availableCredit
+        )
+    );
   }
 
   /**
-   * Clears all customers from the repository.
-   * This is mainly for testing purposes.
-   * @returns A promise that resolves when all customers have been cleared.
+   * Clears all customers from the MongoDB database.
    */
   public async clear(): Promise<void> {
     await this.connect();
