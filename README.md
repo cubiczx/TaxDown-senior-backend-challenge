@@ -83,7 +83,7 @@ The following coverage results represent the integration test suite (`src/tests/
 
 | Test Type            | Statements | Branches | Functions | Lines |
 |----------------------|------------|----------|-----------|-------|
-| **Unit Tests** | 75.51%    | 18.18%   | 80%    | 75.51%|
+| **Unit Tests** | 93.33%    | 66.66%   | 100%    | 93.33%|
 | **Integration Tests** | 38.69%  | 31.25%   | 42.72%    | 39.27%|
 
 The following coverage results represent the integration test suite (`src/tests/unit/application/CustomerService.test.ts`):

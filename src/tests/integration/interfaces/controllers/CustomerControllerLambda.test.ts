@@ -3,6 +3,7 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { CustomerControllerLambda } from "../../../../interfaces/controllers/CustomerControllerLambda";
 import { CustomerService } from "../../../../application/CustomerService";
 import { InMemoryCustomerRepository } from "../../../../infrastructure/persistence/repositories/InMemoryCustomerRepository";
+import { Customer } from "../../../../domain/Customer";
 
 describe("CustomerControllerLambda", () => {
   let customerController: CustomerControllerLambda;
@@ -53,6 +54,44 @@ describe("CustomerControllerLambda", () => {
     expect(result.statusCode).toBe(400);
     const response = JSON.parse(result.body);
     expect(response.error).toBe("Invalid email format.");
+  });
+
+  it("should return 400 if name is empty when creating a customer", async () => {
+    const event: APIGatewayProxyEvent = {
+      body: JSON.stringify({
+        name: "",
+        email: "john.doe@example.com",
+        availableCredit: 1000,
+      }),
+      pathParameters: {},
+      queryStringParameters: {},
+    } as any;
+
+    const result: APIGatewayProxyResult =
+      await customerController.createCustomerLambda(event);
+
+    expect(result.statusCode).toBe(400);
+    const response = JSON.parse(result.body);
+    expect(response.error).toBe("Name cannot be empty.");
+  });
+
+  it("should return 400 if name is to short when creating a customer", async () => {
+    const event: APIGatewayProxyEvent = {
+      body: JSON.stringify({
+        name: "Jo",
+        email: "john.doe@example.com",
+        availableCredit: 1000,
+      }),
+      pathParameters: {},
+      queryStringParameters: {},
+    } as any;
+
+    const result: APIGatewayProxyResult =
+      await customerController.createCustomerLambda(event);
+
+    expect(result.statusCode).toBe(400);
+    const response = JSON.parse(result.body);
+    expect(response.error).toBe("Name must be at least 3 characters long.");
   });
 
   it("should return 409 if email is already in use when creating a customer", async () => {
@@ -127,7 +166,7 @@ describe("CustomerControllerLambda", () => {
   it("should return 404 when customer not found", async () => {
     const event: APIGatewayProxyEvent = {
       pathParameters: {
-        id: "9999", // ID que no existe
+        id: "9999",
       },
       queryStringParameters: {},
       body: null,
@@ -341,20 +380,20 @@ describe("CustomerControllerLambda", () => {
 
   it("should return 400 when adding negative credit", async () => {
     const eventCreate: APIGatewayProxyEvent = {
-        body: JSON.stringify({
-          name: "John Doe",
-          email: "john.doe@example.com",
-          availableCredit: 1000,
-        }),
-        pathParameters: {},
-        queryStringParameters: {},
-      } as any;
-  
-      const resultCreate: APIGatewayProxyResult =
-        await customerController.createCustomerLambda(eventCreate);
-  
-      expect(resultCreate.statusCode).toBe(201);
-      const customerCreate = JSON.parse(resultCreate.body);
+      body: JSON.stringify({
+        name: "John Doe",
+        email: "john.doe@example.com",
+        availableCredit: 1000,
+      }),
+      pathParameters: {},
+      queryStringParameters: {},
+    } as any;
+
+    const resultCreate: APIGatewayProxyResult =
+      await customerController.createCustomerLambda(eventCreate);
+
+    expect(resultCreate.statusCode).toBe(201);
+    const customerCreate = JSON.parse(resultCreate.body);
 
     const event: APIGatewayProxyEvent = {
       body: JSON.stringify({
@@ -372,5 +411,87 @@ describe("CustomerControllerLambda", () => {
     const response = JSON.parse(result.body);
     expect(response.error).toBe("Credit amount cannot be negative.");
   });
-  // TODO TEST EmptyNameException.ts InvalidSortOrderException.ts NameTooShortException.ts
+
+  it("should return 400 when adding invalid credit", async () => {
+    const eventCreate: APIGatewayProxyEvent = {
+      body: JSON.stringify({
+        name: "John Doe",
+        email: "john.doe@example.com",
+        availableCredit: 1000,
+      }),
+      pathParameters: {},
+      queryStringParameters: {},
+    } as any;
+
+    const resultCreate: APIGatewayProxyResult =
+      await customerController.createCustomerLambda(eventCreate);
+
+    expect(resultCreate.statusCode).toBe(201);
+    const customerCreate = JSON.parse(resultCreate.body);
+
+    const invalidAmount = "invalid-amount";
+    const event: APIGatewayProxyEvent = {
+      body: JSON.stringify({
+        id: customerCreate.id,
+        amount: invalidAmount,
+      }),
+      pathParameters: {},
+      queryStringParameters: {},
+    } as any;
+
+    const result: APIGatewayProxyResult =
+      await customerController.addCreditLambda(event);
+
+    expect(result.statusCode).toBe(400);
+    const response = JSON.parse(result.body);
+    expect(response.error).toBe(
+      `Invalid type for property amount: expected number, but received string.`
+    );
+  });
+
+  it("should return 200 and a sorted list of customers when order is valid", async () => {
+    const sortedCustomersMock = [
+      new Customer("1", "Customer One", "one@example.com", 300),
+      new Customer("2", "Customer Two", "two@example.com", 200),
+      new Customer("3", "Customer Three", "three@example.com", 100),
+    ];
+
+    // Mockear el método de servicio para devolver la lista de clientes simulada
+    jest
+      .spyOn(customerService, "sortCustomersByCredit")
+      .mockResolvedValue(sortedCustomersMock);
+
+    const event: APIGatewayProxyEvent = {
+      pathParameters: {},
+      queryStringParameters: {
+        order: "asc",
+      },
+      body: null,
+    } as any;
+
+    const result: APIGatewayProxyResult =
+      await customerController.sortCustomersByCreditLambda(event);
+
+    expect(result.statusCode).toBe(200);
+    const response = JSON.parse(result.body);
+    expect(response).toEqual(sortedCustomersMock);
+    expect(customerService.sortCustomersByCredit).toHaveBeenCalledWith("asc");
+  });
+
+  it("should return 409 if order is invalid in should list all customers", async () => {
+    const event: APIGatewayProxyEvent = {
+      pathParameters: {},
+      queryStringParameters: {
+        order: "invalid-order",
+      },
+      body: null,
+    } as any;
+
+    const result: APIGatewayProxyResult =
+      await customerController.sortCustomersByCreditLambda(event);
+
+    expect(result.statusCode).toBe(400);
+    const response = JSON.parse(result.body);
+    expect(response.error).toBe("Invalid sort order. Use 'asc' or 'desc'.");
+  });
 });

@@ -1,6 +1,7 @@
 export class InvalidSortOrderException extends Error {
   public statusCode: number;
 
+
   constructor() {
     super(
       `Invalid sort order. Use 'asc' or 'desc'.`

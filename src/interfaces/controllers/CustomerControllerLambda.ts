@@ -383,19 +383,6 @@ export class CustomerControllerLambda {
     }
   }
 
-  private handleError(error: any, res: Response): void {
-    const errorMessage = "An error occurred when creating customer:";
-    if (isCustomError(error)) {
-      res.status(error.statusCode).json({
-        error: error.message,
-      });
-    } else {
-      res.status(500).json({
-        error: errorMessage + (error as Error).message,
-      });
-    }
-  }
-
   /**
    * Handles an error that occurred in a Lambda function by
    * returning an API Gateway Proxy Result that contains the
