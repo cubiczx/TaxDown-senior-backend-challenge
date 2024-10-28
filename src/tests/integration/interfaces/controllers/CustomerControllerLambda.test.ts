@@ -372,4 +372,5 @@ describe("CustomerControllerLambda", () => {
     const response = JSON.parse(result.body);
     expect(response.error).toBe("Credit amount cannot be negative.");
   });
+  // TODO TEST EmptyNameException.ts InvalidSortOrderException.ts NameTooShortException.ts
 });

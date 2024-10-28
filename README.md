@@ -163,4 +163,11 @@ The following coverage results represent the integration test suite (`src/tests/
 | **Unit Tests** | 100%    | 0%   | 100%    | 100%|
 | **Integration Tests** | 0.75%  | 0%   | 0.9%    | 0.77%|
 
+The following coverage results represent the integration test suite (`src/tests/unit/utils/ValidationUtils.test.ts`):
+
+| Test Type            | Statements | Branches | Functions | Lines |
+|----------------------|------------|----------|-----------|-------|
+| **Unit Tests** | 97.36%    | 94.44%   | 100%    | 97.36%|
+| **Integration Tests** | 20.6%  | 26.56%   | 22.72%    | 20.67%|
+
 > Detailed coverage results can be found in the `coverage` folder generated after running tests.
