@@ -14,17 +14,10 @@ export class CustomerControllerLambda {
 
   /**
    * @swagger
-   * /customers/{id}:
-   *   put:
-   *     summary: Update a customer
-   *     description: Updates an existing customer in the system.
-   *     parameters:
-   *       - name: id
-   *         in: path
-   *         required: true
-   *         description: The ID of the customer to update
-   *         schema:
-   *           type: string
+   * /customers:
+   *   post:
+   *     summary: Create a new customer
+   *     description: Creates a new customer in the system.
    *     requestBody:
    *       required: true
    *       content:
@@ -34,19 +27,16 @@ export class CustomerControllerLambda {
    *             properties:
    *               name:
    *                 type: string
-   *                 example: "Jane Doe"
-   *                 description: "The new name of the customer (min length: 3)"
+   *                 example: "John Doe"
    *               email:
    *                 type: string
-   *                 example: "jane.doe@example.com"
-   *                 description: "The new email of the customer, must be unique and valid format"
+   *                 example: "john.doe@example.com"
    *               availableCredit:
    *                 type: number
-   *                 example: 1500
-   *                 description: "The available credit for the customer (must be a valid number)"
+   *                 example: 1000
    *     responses:
-   *       200:
-   *         description: Customer updated successfully
+   *       201:
+   *         description: Customer created successfully
    *         content:
    *           application/json:
    *             schema:
@@ -54,41 +44,28 @@ export class CustomerControllerLambda {
    *               properties:
    *                 id:
    *                   type: string
+   *                   example: "1"
    *                 name:
    *                   type: string
+   *                   example: "John Doe"
    *                 email:
    *                   type: string
+   *                   example: "john.doe@example.com"
    *                 availableCredit:
    *                   type: number
+   *                   example: 1000
    *       400:
-   *         description: Invalid input for parameters
+   *         description: Invalid input or validation error
    *         content:
    *           application/json:
    *             schema:
    *               type: object
    *               properties:
-   *                 message:
+   *                 error:
    *                   type: string
-   *                   example: "Invalid type for property email: expected string, but received number."
-   *                 statusCode:
-   *                   type: integer
-   *                   example: 400
-   *               examples:
-   *                 InvalidTypeException_email:
-   *                   summary: Invalid type for email
-   *                   value: { "message": "Invalid type for property email: expected string, but received number.", "statusCode": 400 }
-   *                 InvalidEmailFormatException:
-   *                   summary: Invalid email format
-   *                   value: { "message": "Email is not in a valid format", "statusCode": 400 }
-   *                 InvalidTypeException_name:
-   *                   summary: Invalid type for name
-   *                   value: { "message": "Invalid type for property name: expected string, but received number.", "statusCode": 400 }
-   *                 EmptyNameException:
-   *                   summary: Empty name provided
-   *                   value: { "message": "Name cannot be empty", "statusCode": 400 }
-   *                 InvalidTypeException_availableCredit:
-   *                   summary: Invalid type for available credit
-   *                   value: { "message": "Invalid type for property amount: expected number, but received string.", "statusCode": 400 }
+   *                   example: "Invalid name, email or availableCredit format"
+   *                   example: "Name too short, must be at least 3 characters"
+   *                   example: "Invalid type for property name: expected string, but received number."
    *       409:
    *         description: Email already in use
    *         content:
@@ -96,14 +73,19 @@ export class CustomerControllerLambda {
    *             schema:
    *               type: object
    *               properties:
-   *                 message:
+   *                 error:
    *                   type: string
-   *                   example: "Email is already in use."
-   *                 statusCode:
-   *                   type: integer
-   *                   example: 409
+   *                   example: "Email is already in use"
    *       500:
    *         description: Internal server error
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 error:
+   *                   type: string
+   *                   example: "An unexpected error occurred"
    */
   async createCustomerLambda(req: any): Promise<APIGatewayProxyResult> {
     try {
