@@ -221,7 +221,7 @@ export class CustomerControllerLambda {
    *             example:
    *               message: "Internal Server Error"
    */
-  async getCustomerLambda(req: any): Promise<APIGatewayProxyResult> {
+  async getCustomerByIdLambda(req: any): Promise<APIGatewayProxyResult> {
     // TODO CHANGE  getCustomerByIdLambda
     try {
       const { id } = req.pathParameters;

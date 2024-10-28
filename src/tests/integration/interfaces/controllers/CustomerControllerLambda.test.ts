@@ -224,7 +224,7 @@ describe("CustomerControllerLambda", () => {
       } as any;
 
       const result: APIGatewayProxyResult =
-        await customerController.getCustomerLambda(event);
+        await customerController.getCustomerByIdLambda(event);
 
       expect(result.statusCode).toBe(200);
       const customer = JSON.parse(result.body);
@@ -241,7 +241,7 @@ describe("CustomerControllerLambda", () => {
       } as any;
 
       const result: APIGatewayProxyResult =
-        await customerController.getCustomerLambda(event);
+        await customerController.getCustomerByIdLambda(event);
 
       expect(result.statusCode).toBe(404);
       const response = JSON.parse(result.body);

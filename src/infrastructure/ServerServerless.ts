@@ -84,7 +84,7 @@ export const list = async (
  *
  * This function processes an API Gateway event to retrieve a specific customer
  * based on the provided customer ID in the request path. It delegates the
- * retrieval process to the `getCustomerLambda` method of `CustomerControllerLambda`.
+ * retrieval process to the `getCustomerByIdLambda` method of `CustomerControllerLambda`.
  *
  * @param {APIGatewayEvent} event - The event object from API Gateway containing
  * the request details.
@@ -94,7 +94,7 @@ export const list = async (
 export const getCustomer = async (
   event: APIGatewayEvent
 ): Promise<APIGatewayProxyResult> => {
-  return await customerControllerLambda.getCustomerLambda(event);
+  return await customerControllerLambda.getCustomerByIdLambda(event);
 };
 
 /**
