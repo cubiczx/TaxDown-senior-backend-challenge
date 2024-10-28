@@ -14,10 +14,17 @@ export class CustomerControllerLambda {
 
   /**
    * @swagger
-   * /customers:
-   *   post:
-   *     summary: Create a new customer
-   *     description: Creates a new customer in the system.
+   * /customers/{id}:
+   *   put:
+   *     summary: Update a customer
+   *     description: Updates an existing customer in the system.
+   *     parameters:
+   *       - name: id
+   *         in: path
+   *         required: true
+   *         description: The ID of the customer to update
+   *         schema:
+   *           type: string
    *     requestBody:
    *       required: true
    *       content:
@@ -27,16 +34,19 @@ export class CustomerControllerLambda {
    *             properties:
    *               name:
    *                 type: string
-   *                 example: "John Doe"
+   *                 example: "Jane Doe"
+   *                 description: "The new name of the customer (min length: 3)"
    *               email:
    *                 type: string
-   *                 example: "john.doe@example.com"
+   *                 example: "jane.doe@example.com"
+   *                 description: "The new email of the customer, must be unique and valid format"
    *               availableCredit:
    *                 type: number
-   *                 example: 1000
+   *                 example: 1500
+   *                 description: "The available credit for the customer (must be a valid number)"
    *     responses:
-   *       201:
-   *         description: Customer created successfully
+   *       200:
+   *         description: Customer updated successfully
    *         content:
    *           application/json:
    *             schema:
@@ -44,18 +54,54 @@ export class CustomerControllerLambda {
    *               properties:
    *                 id:
    *                   type: string
-   *                   example: "1"
    *                 name:
    *                   type: string
-   *                   example: "John Doe"
    *                 email:
    *                   type: string
-   *                   example: "john.doe@example.com"
    *                 availableCredit:
    *                   type: number
-   *                   example: 1000
    *       400:
-   *         description: Invalid input
+   *         description: Invalid input for parameters
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 message:
+   *                   type: string
+   *                   example: "Invalid type for property email: expected string, but received number."
+   *                 statusCode:
+   *                   type: integer
+   *                   example: 400
+   *               examples:
+   *                 InvalidTypeException_email:
+   *                   summary: Invalid type for email
+   *                   value: { "message": "Invalid type for property email: expected string, but received number.", "statusCode": 400 }
+   *                 InvalidEmailFormatException:
+   *                   summary: Invalid email format
+   *                   value: { "message": "Email is not in a valid format", "statusCode": 400 }
+   *                 InvalidTypeException_name:
+   *                   summary: Invalid type for name
+   *                   value: { "message": "Invalid type for property name: expected string, but received number.", "statusCode": 400 }
+   *                 EmptyNameException:
+   *                   summary: Empty name provided
+   *                   value: { "message": "Name cannot be empty", "statusCode": 400 }
+   *                 InvalidTypeException_availableCredit:
+   *                   summary: Invalid type for available credit
+   *                   value: { "message": "Invalid type for property amount: expected number, but received string.", "statusCode": 400 }
+   *       409:
+   *         description: Email already in use
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 message:
+   *                   type: string
+   *                   example: "Email is already in use."
+   *                 statusCode:
+   *                   type: integer
+   *                   example: 409
    *       500:
    *         description: Internal server error
    */
@@ -193,12 +239,15 @@ export class CustomerControllerLambda {
    *               name:
    *                 type: string
    *                 example: "Jane Doe"
+   *                 description: "The new name of the customer (min length: 3)"
    *               email:
    *                 type: string
    *                 example: "jane.doe@example.com"
+   *                 description: "The new email of the customer, must be unique and valid format"
    *               availableCredit:
    *                 type: number
    *                 example: 1500
+   *                 description: "The available credit for the customer (must be a valid number)"
    *     responses:
    *       200:
    *         description: Customer updated successfully
@@ -215,8 +264,61 @@ export class CustomerControllerLambda {
    *                   type: string
    *                 availableCredit:
    *                   type: number
+   *       400:
+   *         description: Invalid input for parameters
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 message:
+   *                   type: string
+   *                   example: "Invalid type for property name: expected string, but received number."
+   *                 statusCode:
+   *                   type: integer
+   *                   example: 400
+   *               examples:
+   *                 InvalidTypeException_name:
+   *                   summary: Invalid type for name
+   *                   value: { "message": "Invalid type for property name: expected string, but received number.", "statusCode": 400 }
+   *                 EmptyNameException:
+   *                   summary: Empty name provided
+   *                   value: { "message": "Name cannot be empty", "statusCode": 400 }
+   *                 NameTooShortException:
+   *                   summary: Name too short
+   *                   value: { "message": "Name must be at least 3 characters", "statusCode": 400 }
+   *                 InvalidEmailFormatException:
+   *                   summary: Invalid email format
+   *                   value: { "message": "Email is not in a valid format", "statusCode": 400 }
+   *                 InvalidTypeException_amount:
+   *                   summary: Invalid type for available credit
+   *                   value: { "message": "Invalid type for property availableCredit: expected number, but received string.", "statusCode": 400 }
    *       404:
    *         description: Customer not found
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 message:
+   *                   type: string
+   *                   example: "Customer not found."
+   *                 statusCode:
+   *                   type: integer
+   *                   example: 404
+   *       409:
+   *         description: Email already in use
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 message:
+   *                   type: string
+   *                   example: "Email is already in use."
+   *                 statusCode:
+   *                   type: integer
+   *                   example: 409
    *       500:
    *         description: Internal server error
    */
@@ -225,13 +327,13 @@ export class CustomerControllerLambda {
       const { id } = req.pathParameters;
       const updatedData = JSON.parse(req.body);
 
-      // Extrae las propiedades necesarias de updatedData
+      // Extract the necessary properties from updatedData
       const customerToUpdate = {
         id,
         ...updatedData,
       };
 
-      // Llama al servicio de actualización pasando el id y las propiedades individuales
+      // Call the update service passing the id and individual properties
       const updatedCustomer = await this.customerService.update(
         customerToUpdate.id,
         customerToUpdate.name,
@@ -264,8 +366,36 @@ export class CustomerControllerLambda {
    *     responses:
    *       204:
    *         description: Customer deleted successfully
+   *       400:
+   *         description: Invalid ID type
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 message:
+   *                   type: string
+   *                   example: "Invalid type for property id: expected string, but received number."
+   *                 statusCode:
+   *                   type: integer
+   *                   example: 400
+   *             examples:
+   *               InvalidTypeException_id:
+   *                 summary: Invalid ID type
+   *                 value: { "message": "Invalid type for property id: expected string, but received number.", "statusCode": 400 }
    *       404:
    *         description: Customer not found
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 message:
+   *                   type: string
+   *                   example: "Customer not found."
+   *                 statusCode:
+   *                   type: integer
+   *                   example: 404
    *       500:
    *         description: Internal server error
    */
@@ -324,7 +454,7 @@ export class CustomerControllerLambda {
    *                   type: number
    *                   description: Updated available credit
    *       400:
-   *         description: Invalid input, such as negative credit or missing ID
+   *         description: Invalid input, such as string credit or missing ID
    *       404:
    *         description: Customer not found
    *       452:
