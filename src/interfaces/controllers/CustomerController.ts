@@ -17,6 +17,7 @@ export class CustomerController {
    *   post:
    *     tags: [Customers]
    *     summary: Create a new customer
+   *     description: Creates a new customer in the system.
    *     requestBody:
    *       required: true
    *       content:
@@ -26,16 +27,13 @@ export class CustomerController {
    *             properties:
    *               name:
    *                 type: string
-   *                 description: Customer's name, must be valid and non-empty
-   *                 example: "Xavier Palacín Ayuso"
+   *                 example: "John Doe"
    *               email:
    *                 type: string
-   *                 description: Customer's email, must be in valid format and unique
    *                 example: "john.doe@example.com"
    *               availableCredit:
    *                 type: number
-   *                 description: Initial available credit for the customer, cannot be negative
-   *                 example: 500.0
+   *                 example: 1000
    *     responses:
    *       201:
    *         description: Customer created successfully
@@ -46,53 +44,48 @@ export class CustomerController {
    *               properties:
    *                 id:
    *                   type: string
-   *                   description: The ID of the created customer
-   *                   example: "123456"
+   *                   example: "1"
    *                 name:
    *                   type: string
+   *                   example: "John Doe"
    *                 email:
    *                   type: string
+   *                   example: "john.doe@example.com"
    *                 availableCredit:
    *                   type: number
+   *                   example: 1000
    *       400:
-   *         description: Invalid input data
+   *         description: Invalid input or validation error
    *         content:
    *           application/json:
-   *             examples:
-   *               nameError:
-   *                 summary: Invalid name format
-   *                 value:
-   *                   error: "Name must be at least 3 characters long."
-   *               emailFormatError:
-   *                 summary: Invalid email format
-   *                 value:
-   *                   error: "Invalid email format."
-   *               creditAmountError:
-   *                 summary: Negative credit not allowed
-   *                 value:
-   *                   error: "Credit amount cannot be negative."
-   *               invalidTypeError:
-   *                 summary: Invalid type for a field
-   *                 value:
-   *                   error: "Invalid type for property availableCredit: expected number, but received string."
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 error:
+   *                   type: string
+   *                   example: "Invalid name, email or availableCredit format"
+   *                   example: "Name too short, must be at least 3 characters"
+   *                   example: "Invalid type for property name: expected string, but received number."
    *       409:
    *         description: Email already in use
    *         content:
    *           application/json:
-   *             example:
-   *               error: "Email already in use."
-   *       452:
-   *         description: Credit amount cannot be negative
-   *         content:
-   *           application/json:
-   *             example:
-   *               error: "Credit amount cannot be negative."
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 error:
+   *                   type: string
+   *                   example: "Email is already in use"
    *       500:
-   *         description: An error occurred while creating the customer
+   *         description: Internal server error
    *         content:
    *           application/json:
-   *             example:
-   *               error: "An error occurred when creating customer: <error message>"
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 error:
+   *                   type: string
+   *                   example: "An error occurred when creating customer:"
    */
   async createCustomer(req: Request, res: Response): Promise<void> {
     try {
@@ -213,8 +206,15 @@ export class CustomerController {
    *         description: Customer not found
    *         content:
    *           application/json:
-   *             example:
-   *               message: "Customer not found"
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 message:
+   *                   type: string
+   *                   example: "Customer not found."
+   *                 statusCode:
+   *                   type: integer
+   *                   example: 404
    *       500:
    *         description: An unknown error occurred while retrieving the customer
    *         content:
@@ -292,32 +292,47 @@ export class CustomerController {
    *                   type: number
    *                   description: Customer's available credit
    *       400:
-   *         description: Invalid input data
+   *         description: Invalid input for parameters
    *         content:
    *           application/json:
-   *             examples:
-   *               nameError:
-   *                 summary: Invalid name format
-   *                 value:
-   *                   error: "Name must be at least 3 characters long."
-   *               emailError:
-   *                 summary: Invalid email format
-   *                 value:
-   *                   error: "Invalid email format."
-   *               creditAmountError:
-   *                 summary: Negative credit not allowed
-   *                 value:
-   *                   error: "Credit amount cannot be negative."
-   *               invalidTypeError:
-   *                 summary: Invalid type for a field
-   *                 value:
-   *                   error: "Invalid type for property availableCredit: expected number, but received string."
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 message:
+   *                   type: string
+   *                   example: "Invalid type for property name: expected string, but received number."
+   *                 statusCode:
+   *                   type: integer
+   *                   example: 400
+   *               examples:
+   *                 InvalidTypeException_name:
+   *                   summary: Invalid type for name
+   *                   value: { "message": "Invalid type for property name: expected string, but received number.", "statusCode": 400 }
+   *                 EmptyNameException:
+   *                   summary: Empty name provided
+   *                   value: { "message": "Name cannot be empty", "statusCode": 400 }
+   *                 NameTooShortException:
+   *                   summary: Name too short
+   *                   value: { "message": "Name must be at least 3 characters", "statusCode": 400 }
+   *                 InvalidEmailFormatException:
+   *                   summary: Invalid email format
+   *                   value: { "message": "Email is not in a valid format", "statusCode": 400 }
+   *                 InvalidTypeException_amount:
+   *                   summary: Invalid type for available credit
+   *                   value: { "message": "Invalid type for property availableCredit: expected number, but received string.", "statusCode": 400 }
    *       404:
    *         description: Customer not found
    *         content:
    *           application/json:
-   *             example:
-   *               error: "Customer not found."
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 message:
+   *                   type: string
+   *                   example: "Customer not found."
+   *                 statusCode:
+   *                   type: integer
+   *                   example: 404
    *       409:
    *         description: Email already in use
    *         content:
@@ -333,10 +348,6 @@ export class CustomerController {
    */
   async updateCustomer(req: Request, res: Response): Promise<void> {
     const { id } = req.params;
-    // Validación del tipo de id antes de continuar
-    /*if (typeof id !== "string") {
-      throw new InvalidTypeException("id", "string", id);
-    }*/
     const { name, email, availableCredit } = req.body;
     try {
       const updatedCustomer = await this.customerService.update(
@@ -380,20 +391,35 @@ export class CustomerController {
    *       204:
    *         description: Customer deleted successfully
    *       400:
-   *         description: Invalid input data
+   *         description: Invalid ID type
    *         content:
    *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 message:
+   *                   type: string
+   *                   example: "Invalid type for property id: expected string, but received number."
+   *                 statusCode:
+   *                   type: integer
+   *                   example: 400
    *             examples:
-   *               invalidTypeError:
-   *                 summary: Invalid type for a field
-   *                 value:
-   *                   error: "Invalid type for property availableCredit: expected number, but received string."
+   *               InvalidTypeException_id:
+   *                 summary: Invalid ID type
+   *                 value: { "message": "Invalid type for property id: expected string, but received number.", "statusCode": 400 }
    *       404:
    *         description: Customer not found
    *         content:
    *           application/json:
-   *             example:
-   *               error: "Customer not found."
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 message:
+   *                   type: string
+   *                   example: "Customer not found."
+   *                 statusCode:
+   *                   type: integer
+   *                   example: 404
    *       500:
    *         description: An error occurred
    *         content:
@@ -488,8 +514,15 @@ export class CustomerController {
    *         description: Customer not found
    *         content:
    *           application/json:
-   *             example:
-   *               error: "Customer not found."
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 message:
+   *                   type: string
+   *                   example: "Customer not found."
+   *                 statusCode:
+   *                   type: integer
+   *                   example: 404
    *       452:
    *         description: Negative credit amount not allowed
    *         content:

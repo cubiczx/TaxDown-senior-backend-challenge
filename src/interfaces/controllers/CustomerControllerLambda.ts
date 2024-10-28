@@ -16,6 +16,7 @@ export class CustomerControllerLambda {
    * @swagger
    * /customers:
    *   post:
+   *     tags: [Customers]
    *     summary: Create a new customer
    *     description: Creates a new customer in the system.
    *     requestBody:
@@ -85,7 +86,7 @@ export class CustomerControllerLambda {
    *               properties:
    *                 error:
    *                   type: string
-   *                   example: "An unexpected error occurred"
+   *                   example: "An error occurred when creating customer:"
    */
   async createCustomerLambda(req: any): Promise<APIGatewayProxyResult> {
     try {
@@ -100,7 +101,10 @@ export class CustomerControllerLambda {
         body: JSON.stringify(customer),
       };
     } catch (error) {
-      return this.handleErrorLambda(error);
+      return this.handleErrorLambda(
+        error,
+        "An error occurred when creating customer:"
+      );
     }
   }
 
@@ -108,6 +112,7 @@ export class CustomerControllerLambda {
    * @swagger
    * /customers:
    *   get:
+   *     tags: [Customers]
    *     summary: List all customers
    *     description: Retrieves a list of all customers in the system.
    *     responses:
@@ -122,14 +127,26 @@ export class CustomerControllerLambda {
    *                 properties:
    *                   id:
    *                     type: string
+   *                     description: Customer ID
+   *                     example: "123456"
    *                   name:
    *                     type: string
+   *                     description: Customer name
+   *                     example: "Xavier Palacín Ayuso"
    *                   email:
    *                     type: string
+   *                     description: Customer email
+   *                     example: "john.doe@example.com"
    *                   availableCredit:
    *                     type: number
+   *                     description: Available credit for the customer
+   *                     example: 500.0
    *       500:
-   *         description: Internal server error
+   *         description: An unknown error occurred while retrieving customers
+   *         content:
+   *           application/json:
+   *             example:
+   *               error: "An unknown error occurred when retrieving customers: <error message>"
    */
   async listCustomersLambda(req: any): Promise<APIGatewayProxyResult> {
     try {
@@ -139,7 +156,10 @@ export class CustomerControllerLambda {
         body: JSON.stringify(customers),
       };
     } catch (error) {
-      return this.handleErrorLambda(error);
+      return this.handleErrorLambda(
+        error,
+        "An unknown error occurred when retrieving customers:"
+      );
     }
   }
 
@@ -147,6 +167,7 @@ export class CustomerControllerLambda {
    * @swagger
    * /customers/{id}:
    *   get:
+   *     tags: [Customers]
    *     summary: Retrieve a customer by ID
    *     description: Retrieves a specific customer by their ID.
    *     parameters:
@@ -158,7 +179,7 @@ export class CustomerControllerLambda {
    *           type: string
    *     responses:
    *       200:
-   *         description: Customer retrieved successfully
+   *         description: The requested customer
    *         content:
    *           application/json:
    *             schema:
@@ -166,18 +187,42 @@ export class CustomerControllerLambda {
    *               properties:
    *                 id:
    *                   type: string
+   *                   description: Customer ID
+   *                   example: "123456"
    *                 name:
    *                   type: string
+   *                   description: Customer name
+   *                   example: "Xavier Palacín Ayuso"
    *                 email:
    *                   type: string
+   *                   description: Customer email
+   *                   example: "john.doe@example.com"
    *                 availableCredit:
    *                   type: number
+   *                   description: Available credit for the customer
+   *                   example: 500.0
    *       404:
    *         description: Customer not found
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 message:
+   *                   type: string
+   *                   example: "Customer not found."
+   *                 statusCode:
+   *                   type: integer
+   *                   example: 404
    *       500:
-   *         description: Internal server error
+   *         description: An unknown error occurred while retrieving the customer
+   *         content:
+   *           application/json:
+   *             example:
+   *               message: "Internal Server Error"
    */
   async getCustomerLambda(req: any): Promise<APIGatewayProxyResult> {
+    // TODO CHANGE  getCustomerByIdLambda
     try {
       const { id } = req.pathParameters;
       const customer = await this.customerService.findById(id);
@@ -194,7 +239,10 @@ export class CustomerControllerLambda {
         body: JSON.stringify(customer),
       };
     } catch (error) {
-      return this.handleErrorLambda(error);
+      return this.handleErrorLambda(
+        error,
+        "An unknown error occurred while retrieving the customer:"
+      );
     }
   }
 
@@ -202,6 +250,7 @@ export class CustomerControllerLambda {
    * @swagger
    * /customers/{id}:
    *   put:
+   *     tags: [Customers]
    *     summary: Update a customer
    *     description: Updates an existing customer in the system.
    *     parameters:
@@ -302,7 +351,11 @@ export class CustomerControllerLambda {
    *                   type: integer
    *                   example: 409
    *       500:
-   *         description: Internal server error
+   *         description: An error occurred
+   *         content:
+   *           application/json:
+   *             example:
+   *               error: "An error occurred when updating customer: <error message>"
    */
   async updateCustomerLambda(req: any): Promise<APIGatewayProxyResult> {
     try {
@@ -328,7 +381,10 @@ export class CustomerControllerLambda {
         body: JSON.stringify(updatedCustomer),
       };
     } catch (error) {
-      return this.handleErrorLambda(error);
+      return this.handleErrorLambda(
+        error,
+        "An error occurred when updating customer:"
+      );
     }
   }
 
@@ -336,6 +392,7 @@ export class CustomerControllerLambda {
    * @swagger
    * /customers/{id}:
    *   delete:
+   *     tags: [Customers]
    *     summary: Delete a customer
    *     description: Deletes an existing customer from the system.
    *     parameters:
@@ -379,7 +436,11 @@ export class CustomerControllerLambda {
    *                   type: integer
    *                   example: 404
    *       500:
-   *         description: Internal server error
+   *         description: An error occurred
+   *         content:
+   *           application/json:
+   *             example:
+   *               error: "An error occurred when deleting customer: <error message>"
    */
   async deleteCustomerLambda(req: any): Promise<APIGatewayProxyResult> {
     try {
@@ -390,7 +451,10 @@ export class CustomerControllerLambda {
         body: "",
       };
     } catch (error) {
-      return this.handleErrorLambda(error);
+      return this.handleErrorLambda(
+        error,
+        "An error occurred when deleting customer:"
+      );
     }
   }
 
@@ -436,13 +500,51 @@ export class CustomerControllerLambda {
    *                   type: number
    *                   description: Updated available credit
    *       400:
-   *         description: Invalid input, such as string credit or missing ID
+   *         description: Invalid input, such as negative credit or missing ID
+   *         content:
+   *           application/json:
+   *             examples:
+   *               missingId:
+   *                 summary: Missing customer ID
+   *                 value:
+   *                   error: "Customer ID is required."
+   *               invalidAmountError:
+   *                 summary: Invalid credit amount
+   *                 value:
+   *                   error: "Credit amount must be a positive number."
+   *               creditAmountError:
+   *                 summary: Negative credit not allowed
+   *                 value:
+   *                   error: "Credit amount cannot be negative."
+   *               invalidTypeError:
+   *                 summary: Invalid type for a field
+   *                 value:
+   *                   error: "Invalid type for property availableCredit: expected number, but received string."
    *       404:
    *         description: Customer not found
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 message:
+   *                   type: string
+   *                   example: "Customer not found."
+   *                 statusCode:
+   *                   type: integer
+   *                   example: 404
    *       452:
    *         description: Negative credit amount not allowed
-   *       500:
+   *         content:
+   *           application/json:
+   *             example:
+   *               error: "Credit amount cannot be negative."
+   *        500:
    *         description: An unknown error occurred
+   *         content:
+   *           application/json:
+   *             example:
+   *               error: "An error occurred when adding credit: <error message>"
    */
   async addCreditLambda(req: any): Promise<APIGatewayProxyResult> {
     try {
@@ -453,7 +555,10 @@ export class CustomerControllerLambda {
         body: JSON.stringify(customer),
       };
     } catch (error) {
-      return this.handleErrorLambda(error);
+      return this.handleErrorLambda(
+        error,
+        "An error occurred when adding credit:"
+      );
     }
   }
 
@@ -474,10 +579,45 @@ export class CustomerControllerLambda {
    *     responses:
    *       200:
    *         description: A list of customers sorted by credit
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: array
+   *               items:
+   *                 type: object
+   *                 properties:
+   *                   id:
+   *                     type: string
+   *                     description: Customer ID
+   *                   name:
+   *                     type: string
+   *                     description: Customer name
+   *                   email:
+   *                     type: string
+   *                     description: Customer email
+   *                   availableCredit:
+   *                     type: number
+   *                     description: Customer's available credit
    *       400:
    *         description: Invalid sort order provided
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 error:
+   *                   type: string
+   *                   example: "Invalid sort order. Use 'asc' or 'desc'."
    *       500:
    *         description: An error occurred
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 error:
+   *                   type: string
+   *                   example: "An error occurred while sorting customers by credit: <error message>"
    */
   async sortCustomersByCreditLambda(req: any): Promise<APIGatewayProxyResult> {
     const order = req.queryStringParameters?.order || "desc";
@@ -491,7 +631,10 @@ export class CustomerControllerLambda {
         body: JSON.stringify(sortedCustomers),
       };
     } catch (error) {
-      return this.handleErrorLambda(error);
+      return this.handleErrorLambda(
+        error,
+        "An error occurred while sorting customers by credit:"
+      );
     }
   }
 
@@ -503,10 +646,13 @@ export class CustomerControllerLambda {
    * Otherwise, uses a generic 500 status code and a string
    * containing the error message.
    * @param error the error to handle
+   * @param errorMessage the error message
    * @returns an API Gateway Proxy Result
    */
-  private handleErrorLambda(error: any): APIGatewayProxyResult {
-    const errorMessage = "An error occurred when creating customer:";
+  private handleErrorLambda(
+    error: any,
+    errorMessage: string
+  ): APIGatewayProxyResult {
     if (isCustomError(error)) {
       return {
         statusCode: error.statusCode,
