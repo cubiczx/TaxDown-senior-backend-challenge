@@ -82,9 +82,6 @@ export class CustomerController {
    *                 EmptyName:
    *                   summary: Name cannot be empty
    *                   value: { "message": "Name cannot be empty.", "statusCode": 400 }
-   *                 NameTooShortException_name:
-   *                   summary: Name Too Short for name
-   *                   value: { "message": "Name too short, must be at least 3 characters", "statusCode": 400 }
    *                 NegativeCreditAmountException:
    *                   summary: Credit amount cannot be negative
    *                   value: { "message": "Credit amount cannot be negative.", "statusCode": 400 }
@@ -256,8 +253,18 @@ export class CustomerController {
       }
       res.status(200).json(customer);
     } catch (error) {
-      console.error(error);
-      res.status(500).json({ message: "Internal Server Error" });
+      const errorMessage = "An unknown error occurred while retrieving the customer:";
+      if (isCustomError(error)) {
+        //console.error(errorMessage, error.message);
+        res.status(error.statusCode).json({
+          error: error.message,
+        });
+      } else {
+        //console.error(errorMessage, (error as Error).message);
+        res.status(500).json({
+          error: errorMessage + (error as Error).message,
+        });
+      }
     }
   }
   

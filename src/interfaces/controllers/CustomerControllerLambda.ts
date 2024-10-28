@@ -83,9 +83,6 @@ export class CustomerControllerLambda {
    *                 EmptyName:
    *                   summary: Name cannot be empty
    *                   value: { "message": "Name cannot be empty.", "statusCode": 400 }
-   *                 NameTooShortException_name:
-   *                   summary: Name Too Short for name
-   *                   value: { "message": "Name too short, must be at least 3 characters", "statusCode": 400 }
    *                 NegativeCreditAmountException:
    *                   summary: Credit amount cannot be negative
    *                   value: { "message": "Credit amount cannot be negative.", "statusCode": 400 }
