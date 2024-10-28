@@ -85,7 +85,6 @@ export class CustomerController {
    *                 NegativeCreditAmountException:
    *                   summary: Credit amount cannot be negative
    *                   value: { "message": "Credit amount cannot be negative.", "statusCode": 400 }
-   * 
    *       409:
    *         description: Email already in use
    *         content:

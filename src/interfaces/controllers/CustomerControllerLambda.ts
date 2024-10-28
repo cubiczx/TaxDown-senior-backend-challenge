@@ -557,7 +557,7 @@ export class CustomerControllerLambda {
    *           application/json:
    *             example:
    *               error: "Credit amount cannot be negative."
-   *        500:
+   *       500:
    *         description: An unknown error occurred
    *         content:
    *           application/json:
