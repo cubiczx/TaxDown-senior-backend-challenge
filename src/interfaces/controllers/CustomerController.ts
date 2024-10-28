@@ -63,9 +63,32 @@ export class CustomerController {
    *               properties:
    *                 error:
    *                   type: string
-   *                   example: "Invalid name, email or availableCredit format"
-   *                   example: "Name too short, must be at least 3 characters"
-   *                   example: "Invalid type for property name: expected string, but received number."
+   *               examples:
+   *                 NameTooShortException_name:
+   *                   summary: Name Too Short for name
+   *                   value: { "message": "Name too short, must be at least 3 characters", "statusCode": 400 }
+   *                 InvalidTypeException_name:
+   *                   summary: Invalid Type for name
+   *                   value: { "message": "Invalid type for property name: expected string, but received number.", "statusCode": 400 }
+   *                 InvalidTypeException_email:
+   *                   summary: Invalid Type for email
+   *                   value: { "message": "Invalid type for property email: expected string, but received number.", "statusCode": 400 }
+   *                 InvalidTypeException_amount:
+   *                   summary: Invalid Type fort for amount
+   *                   value: { "message": "Invalid type for property amount: expected number, but received string.", "statusCode": 400 }
+   *                 InvalidEmailFormat:
+   *                   summary: Invalid email format
+   *                   value: { "message": "Invalid email format.", "statusCode": 400 }
+   *                 EmptyName:
+   *                   summary: Name cannot be empty
+   *                   value: { "message": "Name cannot be empty.", "statusCode": 400 }
+   *                 NameTooShortException_name:
+   *                   summary: Name Too Short for name
+   *                   value: { "message": "Name too short, must be at least 3 characters", "statusCode": 400 }
+   *                 NegativeCreditAmountException:
+   *                   summary: Credit amount cannot be negative
+   *                   value: { "message": "Credit amount cannot be negative.", "statusCode": 400 }
+   * 
    *       409:
    *         description: Email already in use
    *         content:
