@@ -70,7 +70,9 @@ For installation instructions, see the [Installation Guide](/docs/INSTALL.md).
 
 Check the [Usage Guide](/docs/USAGE.md) for information on using the API.
 
-## Test Coverage
+## Coverage Report
+
+For a detailed coverage report, run all test with `npm run dev` and open `coverage/lcov-report/index.html`.
 
 The following coverage results represent the all test suites:
 
