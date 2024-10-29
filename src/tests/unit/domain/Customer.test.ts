@@ -6,7 +6,7 @@ import { InvalidEmailFormatException } from "../../../exceptions/InvalidEmailFor
 import { NegativeCreditAmountException } from "../../../exceptions/NegativeCreditAmountException";
 import { EmptyNameException } from "../../../exceptions/EmptyNameException";
 
-jest.mock("../../utils/ValidationUtils");
+jest.mock("../../../utils/ValidationUtils");
 
 describe("Customer", () => {
   const id = "1";
