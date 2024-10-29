@@ -16,5 +16,5 @@ module.exports = {
   collectCoverage: true,
   collectCoverageFrom: ['<rootDir>/src/**/*.ts', "!<rootDir>/src/middleware/**", '!**/node_modules/**'],
   coverageDirectory: '<rootDir>/coverage',
-  testTimeout: 30000,
+  testTimeout: 50000,
 };

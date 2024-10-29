@@ -76,7 +76,7 @@ The following coverage results represent the all test suites:
 
 | Test Type            | Statements | Branches | Functions | Lines |
 |----------------------|------------|----------|-----------|-------|
-| **Integration Tests** | 83.7%  | 92.75%   | 79.81%    | 85.53%|
+| **Integration Tests** | 84.84%  | 95.71%   | 80.55%    | 86.75%|
 
 The following coverage results represent the integration test suite (`src/tests/integration/interfaces/controllers/CustomerController.test.ts`):
 
