@@ -2,6 +2,9 @@ import request from "supertest";
 import { app } from "../../../../infrastructure/Server";
 import { InMemoryCustomerRepository } from "../../../../infrastructure/persistence/repositories/InMemoryCustomerRepository";
 import { Customer } from "../../../../domain/Customer";
+import { CustomerNotFoundException } from "../../../../exceptions/CustomerNotFoundException";
+import { CustomerService } from "../../../../application/CustomerService";
+import { ValidationUtils } from "../../../../utils/ValidationUtils";
 
 describe("CustomerController Integration Tests", () => {
   let customerRepository: InMemoryCustomerRepository;
@@ -25,6 +28,16 @@ describe("CustomerController Integration Tests", () => {
       expect(response.status).toBe(201);
     });
 
+    it("should create a Customer with default available credit", async () => {
+      const newCustomer = {
+        name: "John Doe",
+        email: "john.doe@example.com",
+      };
+      const response = await request(app).post("/customers").send(newCustomer);
+      expect(response.status).toBe(201);
+      expect(response.body.availableCredit).toBe(0);
+    });
+
     it("should return 409 if email is already in use", async () => {
       const customer = {
         name: "Jane Doe",
@@ -36,7 +49,7 @@ describe("CustomerController Integration Tests", () => {
       expect(response.status).toBe(409);
     });
 
-    it("should return 400 if email is invalid", async () => {
+    it("should return 400 if email is invalid format", async () => {
       const invalidCustomer = {
         name: "Invalid Email",
         email: "invalid-email",
@@ -108,16 +121,26 @@ describe("CustomerController Integration Tests", () => {
       expect(response.status).toBe(400);
     });
 
-    it("should return 452 if availableCredit is negative", async () => {
-      const invalidCustomer = {
-        name: "Valid Name",
-        email: "valid@example.com",
-        availableCredit: -100,
+    it("should return a 500 error when an unexpected error occurs", async () => {
+      const errorMessage = "Unexpected error";
+      const mockCustomerService = jest
+        .spyOn(CustomerService.prototype, "create")
+        .mockImplementationOnce(() => {
+          throw new Error(errorMessage);
+        });
+
+      const newCustomer = {
+        name: "John Doe",
+        email: "john.doe@example.com",
+        availableCredit: 500,
       };
-      const response = await request(app)
-        .post("/customers")
-        .send(invalidCustomer);
-      expect(response.status).toBe(452);
+      const response = await request(app).post("/customers").send(newCustomer);
+      expect(response.status).toBe(500);
+      expect(response.body.error).toContain(
+        "An unknown error occurred when creating customer:"
+      );
+
+      mockCustomerService.mockRestore();
     });
   });
 
@@ -134,26 +157,98 @@ describe("CustomerController Integration Tests", () => {
       expect(response.status).toBe(200);
       expect(response.body).toEqual([]);
     });
+
+    it("should return a 500 error when an unexpected error occurs", async () => {
+      const errorMessage = "Unexpected error";
+      const mockCustomerService = jest
+        .spyOn(CustomerService.prototype, "list")
+        .mockImplementationOnce(() => {
+          throw new Error(errorMessage);
+        });
+
+      const response = await request(app).get("/customers");
+      expect(response.status).toBe(500);
+      expect(response.body.error).toContain(
+        "An unknown error occurred when retrieving customers:"
+      );
+
+      mockCustomerService.mockRestore();
+    });
+
+    it("should return a 404 error when customer not found", async () => {
+      const mockCustomerService = jest
+        .spyOn(CustomerService.prototype, "list")
+        .mockImplementationOnce(() => {
+          throw new CustomerNotFoundException();
+        });
+
+      const response = await request(app).get("/customers");
+      expect(response.status).toBe(404);
+      expect(response.body.error).toBe("Customer not found.");
+
+      mockCustomerService.mockRestore();
+    });
   });
 
-  describe('GET /customers/:id', () => {
-    it('should return a customer if found', async () => {
+  describe("GET /customers/:id", () => {
+    it("should return a customer if found", async () => {
       const newCustomer = await request(app).post("/customers").send({
         name: "Customer To get",
         email: "get.me@example.com",
         availableCredit: 200,
       });
 
-      const response = await request(app).get(`/customers/${newCustomer.body.id}`);
+      const response = await request(app).get(
+        `/customers/${newCustomer.body.id}`
+      );
 
       expect(response.status).toBe(200);
     });
 
-    it('should return 404 if customer not found', async () => {
-      const response = await request(app).get('/customers/2');
+    it("should return 404 if customer not found", async () => {
+      const response = await request(app).get("/customers/12345678a");
 
       expect(response.status).toBe(404);
-      expect(response.body).toHaveProperty('message', 'Customer not found');
+      expect(response.body).toHaveProperty("error", "Customer not found.");
+    });
+
+    it("should return 400 if id is not a valid id", async () => {
+      const response = await request(app).get("/customers/a");
+
+      expect(response.status).toBe(400);
+      expect(response.body).toHaveProperty(
+        "error",
+        "Invalid type for property id: expected string containing exactly 9 alphanumeric characters, but received string."
+      );
+    });
+
+    it("should return a 404 if findById return empty", async () => {
+      const mockCustomerService = jest
+        .spyOn(CustomerService.prototype, "findById")
+        .mockResolvedValue(undefined);
+
+      const response = await request(app).get("/customers/12345678a");
+      expect(response.status).toBe(404);
+      expect(response.body.message).toContain("Customer not found");
+
+      mockCustomerService.mockRestore();
+    });
+
+    it("should return a 500 error when an unexpected error occurs", async () => {
+      const errorMessage = "Unexpected error";
+      const mockCustomerService = jest
+        .spyOn(CustomerService.prototype, "findById")
+        .mockImplementationOnce(() => {
+          throw new Error(errorMessage);
+        });
+
+      const response = await request(app).get("/customers/12345678a");
+      expect(response.status).toBe(500);
+      expect(response.body.error).toContain(
+        "An unknown error occurred while retrieving the customer:"
+      );
+
+      mockCustomerService.mockRestore();
     });
   });
 
@@ -165,12 +260,26 @@ describe("CustomerController Integration Tests", () => {
         availableCredit: 1000,
       });
 
-      const updateData = { name: "John Smith Updated", availableCredit: 1500 };
+      const updateData = {
+        name: "John Smith Updated",
+        email: "john.smithUPDATED@example.com",
+        availableCredit: 1500,
+      };
       const response = await request(app)
         .put(`/customers/${newCustomer.body.id}`)
         .send(updateData);
       expect(response.status).toBe(200);
       expect(response.body.name).toBe("John Smith Updated");
+    });
+
+    it("should return 400 if id is not a valid id", async () => {
+      const response = await request(app).put("/customers/invalid-id");
+
+      expect(response.status).toBe(400);
+      expect(response.body).toHaveProperty(
+        "error",
+        "Invalid type for property id: expected string containing exactly 9 alphanumeric characters, but received string."
+      );
     });
 
     it("should update one field of an existing customer", async () => {
@@ -215,11 +324,31 @@ describe("CustomerController Integration Tests", () => {
       });
     });
 
-    it("should return 404 if customer does not exist", async () => {
+    it("should return 404 if customer does not exist in service", async () => {
+      // Mock validateCustomerExists so it doesn't block execution
+      const mockValidateCustomerExists = jest
+        .spyOn(ValidationUtils, "validateCustomerExists")
+        .mockResolvedValueOnce();
+
+      // Mock findById to return undefined and enter the if (!customer)
+      const mockFindById = jest
+        .spyOn(CustomerService.prototype, "findById")
+        .mockResolvedValueOnce(undefined);
+
+      const updateData = { name: "John Smith Updated", availableCredit: 1500 };
+
       const response = await request(app)
-        .put(`/customers/invalid-id`)
-        .send({ name: "Non-existent Customer" });
+        .put("/customers/12345678a")
+        .send(updateData);
+
       expect(response.status).toBe(404);
+      expect(response.body).toEqual({
+        error: new CustomerNotFoundException().message,
+      });
+
+      // Restaurar los mocks para que no afecten a otros tests
+      mockValidateCustomerExists.mockRestore();
+      mockFindById.mockRestore();
     });
 
     it("should throw InvalidTypeException for email", async () => {
@@ -317,6 +446,26 @@ describe("CustomerController Integration Tests", () => {
         .send({ availableCredit: "not-a-number" });
       expect(response.status).toBe(400);
     });
+
+    it("should return a 500 error when an unexpected error occurs", async () => {
+      const errorMessage = "Unexpected error";
+      const mockCustomerService = jest
+        .spyOn(CustomerService.prototype, "update")
+        .mockImplementationOnce(() => {
+          throw new Error(errorMessage);
+        });
+
+      const updateData = { name: "John Smith Updated", availableCredit: 1500 };
+      const response = await request(app)
+        .put("/customers/12345678a")
+        .send(updateData);
+      expect(response.status).toBe(500);
+      expect(response.body.error).toContain(
+        "An unknown error occurred when updating customer:"
+      );
+
+      mockCustomerService.mockRestore();
+    });
   });
 
   describe("DELETE /customers/:id", () => {
@@ -333,14 +482,41 @@ describe("CustomerController Integration Tests", () => {
       expect(response.status).toBe(204);
     });
 
+    it("should return 400 if id is not a valid id", async () => {
+      const response = await request(app).delete("/customers/invalid-id");
+
+      expect(response.status).toBe(400);
+      expect(response.body).toHaveProperty(
+        "error",
+        "Invalid type for property id: expected string containing exactly 9 alphanumeric characters, but received string."
+      );
+    });
+
     it("should return 404 if customer does not exist", async () => {
-      const response = await request(app).delete(`/customers/invalid-id`);
+      const response = await request(app).delete(`/customers/12345678a`);
       expect(response.status).toBe(404);
     });
 
-    it("should return 404 if trying to delete a non-existent customer", async () => {
-      const response = await request(app).delete('/customers/invalid-id');
+    it("should return 400 if trying to delete a non-existent customer", async () => {
+      const response = await request(app).delete("/customers/12345678a");
       expect(response.status).toBe(404);
+    });
+
+    it("should return a 500 error when an unexpected error occurs", async () => {
+      const errorMessage = "Unexpected error";
+      const mockCustomerService = jest
+        .spyOn(CustomerService.prototype, "delete")
+        .mockImplementationOnce(() => {
+          throw new Error(errorMessage);
+        });
+
+      const response = await request(app).delete("/customers/12345678a");
+      expect(response.status).toBe(500);
+      expect(response.body.error).toContain(
+        "An unknown error occurred when deleting customer:"
+      );
+
+      mockCustomerService.mockRestore();
     });
   });
 
@@ -352,10 +528,17 @@ describe("CustomerController Integration Tests", () => {
       expect(response.status).toBe(400);
     });
 
+    it("should throw InvalidTypeException for string id", async () => {
+      const response = await request(app)
+        .post("/customers/credit")
+        .send({ id: "invalid-id", amount: 100 });
+      expect(response.status).toBe(400);
+    });
+
     it("should throw CustomerNotFoundException if customer does not exist", async () => {
       const response = await request(app)
         .post("/customers/credit")
-        .send({ id: "non-existent-id", amount: 100 });
+        .send({ id: "12345678a", amount: 100 });
       expect(response.status).toBe(404);
     });
 
@@ -408,6 +591,50 @@ describe("CustomerController Integration Tests", () => {
         email: "credit.test@example.com",
         availableCredit: 350,
       });
+    });
+
+    it("should return a 500 error when an unexpected error occurs", async () => {
+      const errorMessage = "Unexpected error";
+      const mockCustomerService = jest
+        .spyOn(CustomerService.prototype, "addCredit")
+        .mockImplementationOnce(() => {
+          throw new Error(errorMessage);
+        });
+
+      const response = await request(app)
+        .post("/customers/credit")
+        .send({ id: 123, amount: 100 });
+      expect(response.status).toBe(500);
+      expect(response.body.error).toContain(
+        "An unknown error occurred when adding credit:"
+      );
+
+      mockCustomerService.mockRestore();
+    });
+
+    it("should throw CustomerNotFoundException if customer does not exist", async () => {
+      // Mock validateCustomerExists so it doesn't block execution
+      const mockValidateCustomerExists = jest
+        .spyOn(ValidationUtils, "validateCustomerExists")
+        .mockResolvedValueOnce();
+
+      // Mock findById to return undefined and enter the if (!customer)
+      const mockFindById = jest
+        .spyOn(CustomerService.prototype, "findById")
+        .mockResolvedValueOnce(undefined);
+
+      const response = await request(app)
+        .post("/customers/credit")
+        .send({ id: "12345678a", amount: 100 });
+
+      expect(response.status).toBe(404);
+      expect(response.body).toEqual({
+        error: new CustomerNotFoundException().message,
+      });
+
+      // Restore mocks so they don't affect other tests
+      mockValidateCustomerExists.mockRestore();
+      mockFindById.mockRestore();
     });
   });
 
@@ -524,6 +751,28 @@ describe("CustomerController Integration Tests", () => {
 
       expect(response.status).toBe(200);
       expect(response.body).toEqual([]);
+    });
+
+    it("should return a 500 error when an unexpected error occurs", async () => {
+      const errorMessage = "Unexpected error";
+      const mockCustomerService = jest
+        .spyOn(CustomerService.prototype, "sortCustomersByCredit")
+        .mockImplementationOnce(() => {
+          throw new Error(errorMessage);
+        });
+
+      const response = await request(app).get("/customers/sortByCredit");
+      expect(response.status).toBe(500);
+      expect(response.body.error).toContain(
+        "An unknown error occurred while sorting customers by credit:"
+      );
+
+      mockCustomerService.mockRestore();
+    });
+  });
+
+  describe("Error Handling", () => {
+    it.skip("should return a 500 error for unexpected error", async () => {
     });
   });
 });

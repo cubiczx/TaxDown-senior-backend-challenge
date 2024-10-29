@@ -23,8 +23,9 @@ export class MongoDBCustomerRepository implements CustomerRepositoryInterface {
   /**
    * Connects to the MongoDB database.
    * @returns A promise that resolves when the connection is established.
+   * If the connection is already established, the promise resolves immediately.
    */
-  async connect() {
+  async connect(): Promise<void> {
     await this.client.connect();
   }
 
@@ -32,7 +33,7 @@ export class MongoDBCustomerRepository implements CustomerRepositoryInterface {
    * Disconnects from the MongoDB database.
    * @returns A promise that resolves when the connection is closed.
    */
-  async disconnect() {
+  async disconnect(): Promise<void> {
     await this.client.close();
   }
 

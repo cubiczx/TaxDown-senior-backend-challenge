@@ -179,7 +179,7 @@ describe("CustomerService", () => {
   });
 
   describe("update", () => {
-    const id = "123";
+    const id = "12345678a";
     const name = "Xavier Palacín Ayuso";
     const email = "cubiczx@hotmail.com";
     const availableCredit = 2000;
@@ -234,7 +234,7 @@ describe("CustomerService", () => {
       (customerRepository.findById as jest.Mock).mockResolvedValue(null);
 
       await expect(
-        customerService.update("non-existent-id", name, email, availableCredit)
+        customerService.update("12345678a", name, email, availableCredit)
       ).rejects.toThrow(CustomerNotFoundException);
     });
 
@@ -371,6 +371,26 @@ describe("CustomerService", () => {
         customerService.update(id, name, email, invalidAvailableCredit)
       ).rejects.toThrow(NegativeCreditAmountException);
     });
+
+    it("should throw InvalidTypeException if customer id is invalid", async () => {
+      // Arrange
+      const invalidId = "invalid-id";
+      
+      (ValidationUtils.validateCustomerExists as jest.Mock).mockImplementation(
+        async () => {
+          throw new InvalidTypeException(
+            "id",
+            "string containing exactly 9 alphanumeric characters",
+            id
+          );
+        }
+      );
+
+      // Act & Assert
+      await expect(customerService.update(invalidId, name, email, availableCredit)).rejects.toThrow(
+        InvalidTypeException
+      );
+    });
   });
 
   describe("list", () => {
@@ -405,8 +425,9 @@ describe("CustomerService", () => {
 
   describe("findById", () => {
     it("should return a customer if found", async () => {
+      const id = "12345678a";
       const mockCustomer: Customer = new Customer(
-        "1",
+        id,
         "John Doe",
         "john@example.com",
         100
@@ -415,21 +436,42 @@ describe("CustomerService", () => {
         mockCustomer
       );
 
-      const result = await customerService.findById("1");
+      const result = await customerService.findById(id);
 
       expect(result).toEqual(mockCustomer);
-      expect(customerRepository.findById).toHaveBeenCalledWith("1");
+      expect(customerRepository.findById).toHaveBeenCalledWith(id);
       expect(customerRepository.findById).toHaveBeenCalledTimes(1);
     });
 
     it("should return undefined if customer not found", async () => {
+      const id = "12345678a";
       (customerRepository.findById as jest.Mock).mockResolvedValue(undefined);
 
-      const result = await customerService.findById("2");
+      const result = await customerService.findById(id);
 
       expect(result).toBeUndefined();
-      expect(customerRepository.findById).toHaveBeenCalledWith("2");
+      expect(customerRepository.findById).toHaveBeenCalledWith(id);
       expect(customerRepository.findById).toHaveBeenCalledTimes(1);
+    });
+
+    it("should throw InvalidTypeException if customer id is invalid", async () => {
+      // Arrange
+      const id = "invalid-id";
+
+      (ValidationUtils.validateCustomerExists as jest.Mock).mockImplementation(
+        async () => {
+          throw new InvalidTypeException(
+            "id",
+            "string containing exactly 9 alphanumeric characters",
+            id
+          );
+        }
+      );
+
+      // Act & Assert
+      await expect(customerService.findById(id)).rejects.toThrow(
+        InvalidTypeException
+      );
     });
   });
 
@@ -456,7 +498,7 @@ describe("CustomerService", () => {
 
     it("should throw CustomerNotFoundException if customer does not exist", async () => {
       // Arrange
-      const id = "non-existent-id";
+      const id = "12345678a";
       (customerRepository.findById as jest.Mock).mockResolvedValue(null); // Pretend it doesn't exist
 
       (ValidationUtils.validateCustomerExists as jest.Mock).mockImplementation(
@@ -483,6 +525,26 @@ describe("CustomerService", () => {
 
       // Act & Assert
       await expect(customerService.delete(id as any)).rejects.toThrow(
+        InvalidTypeException
+      );
+    });
+
+    it("should throw InvalidTypeException if customer id is invalid", async () => {
+      // Arrange
+      const id = "invalid-id";
+
+      (ValidationUtils.validateCustomerExists as jest.Mock).mockImplementation(
+        async () => {
+          throw new InvalidTypeException(
+            "id",
+            "string containing exactly 9 alphanumeric characters",
+            id
+          );
+        }
+      );
+
+      // Act & Assert
+      await expect(customerService.delete(id)).rejects.toThrow(
         InvalidTypeException
       );
     });
@@ -604,7 +666,7 @@ describe("CustomerService", () => {
 
     it("should throw CustomerNotFoundException if customer does not exist", async () => {
       // Arrange
-      const id = "non-existent-id";
+      const id = "12345678a";
       const amount = 500;
 
       (customerRepository.findById as jest.Mock).mockResolvedValue(null);
@@ -686,6 +748,27 @@ describe("CustomerService", () => {
       await expect(
         customerService.addCredit(customerId, negativeAmount)
       ).rejects.toThrow(NegativeCreditAmountException);
+    });
+
+    it("should throw InvalidTypeException if customer id is invalid", async () => {
+      // Arrange
+      const id = "invalid-id";
+      const amount = 500;
+
+      (ValidationUtils.validateCustomerExists as jest.Mock).mockImplementation(
+        async () => {
+          throw new InvalidTypeException(
+            "id",
+            "string containing exactly 9 alphanumeric characters",
+            id
+          );
+        }
+      );
+
+      // Act & Assert
+      await expect(customerService.addCredit(id, amount)).rejects.toThrow(
+        InvalidTypeException
+      );
     });
   });
 });

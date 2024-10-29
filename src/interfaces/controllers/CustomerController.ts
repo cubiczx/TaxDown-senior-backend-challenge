@@ -82,9 +82,6 @@ export class CustomerController {
    *                 EmptyName:
    *                   summary: Name cannot be empty
    *                   value: { "message": "Name cannot be empty.", "statusCode": 400 }
-   *                 NegativeCreditAmountException:
-   *                   summary: Credit amount cannot be negative
-   *                   value: { "message": "Credit amount cannot be negative.", "statusCode": 400 }
    *       409:
    *         description: Email already in use
    *         content:
@@ -104,7 +101,7 @@ export class CustomerController {
    *               properties:
    *                 error:
    *                   type: string
-   *                   example: "An error occurred when creating customer:"
+   *                   example: "An unknown error occurred when creating customer:"
    */
   async createCustomer(req: Request, res: Response): Promise<void> {
     try {
@@ -116,7 +113,7 @@ export class CustomerController {
       );
       res.status(201).json(customer);
     } catch (error) {
-      const errorMessage = "An error occurred when creating customer:";
+      const errorMessage = "An unknown error occurred when creating customer:";
       if (isCustomError(error)) {
         //console.error(errorMessage, error.message);
         res.status(error.statusCode).json({
@@ -175,11 +172,18 @@ export class CustomerController {
       const customers = await this.customerService.list();
       res.status(200).json(customers);
     } catch (error) {
-      const errorMessage = "An error occurred when retrieving customers:";
-      //console.error(errorMessage, (error as Error).message);
-      res.status(500).json({
-        error: errorMessage + (error as Error).message,
-      });
+      const errorMessage = "An unknown error occurred when retrieving customers:";
+      if (isCustomError(error)) {
+        //console.error(errorMessage, error.message);
+        res.status(error.statusCode).json({
+          error: error.message,
+        });
+      } else {
+        //console.error(errorMessage, (error as Error).message);
+        res.status(500).json({
+          error: errorMessage + (error as Error).message,
+        });
+      }
     }
   }
 
@@ -243,7 +247,7 @@ export class CustomerController {
    */
   async getCustomerById(req: Request, res: Response): Promise<void> {
     const { id } = req.params;
-  
+
     try {
       const customer = await this.customerService.findById(id);
       if (!customer) {
@@ -252,7 +256,8 @@ export class CustomerController {
       }
       res.status(200).json(customer);
     } catch (error) {
-      const errorMessage = "An unknown error occurred while retrieving the customer:";
+      const errorMessage =
+        "An unknown error occurred while retrieving the customer:";
       if (isCustomError(error)) {
         //console.error(errorMessage, error.message);
         res.status(error.statusCode).json({
@@ -266,7 +271,7 @@ export class CustomerController {
       }
     }
   }
-  
+
   /**
    * @swagger
    * /customers/{id}:
@@ -369,11 +374,11 @@ export class CustomerController {
    *             example:
    *               error: "Email already in use."
    *       500:
-   *         description: An error occurred
+   *         description: An unknown error occurred
    *         content:
    *           application/json:
    *             example:
-   *               error: "An error occurred when updating customer: <error message>"
+   *               error: "An unknown error occurred when updating customer: <error message>"
    */
   async updateCustomer(req: Request, res: Response): Promise<void> {
     const { id } = req.params;
@@ -387,7 +392,7 @@ export class CustomerController {
       );
       res.status(200).json(updatedCustomer);
     } catch (error) {
-      const errorMessage = "An error occurred when updating customer:";
+      const errorMessage = "An unknown error occurred when updating customer:";
       if (isCustomError(error)) {
         //console.error(errorMessage, error.message);
         res.status(error.statusCode).json({
@@ -450,11 +455,11 @@ export class CustomerController {
    *                   type: integer
    *                   example: 404
    *       500:
-   *         description: An error occurred
+   *         description: An unknown error occurred
    *         content:
    *           application/json:
    *             example:
-   *               error: "An error occurred when deleting customer: <error message>"
+   *               error: "An unknown error occurred when deleting customer: <error message>"
    */
   async deleteCustomer(req: Request, res: Response): Promise<void> {
     const { id } = req.params;
@@ -462,7 +467,7 @@ export class CustomerController {
       await this.customerService.delete(id);
       res.status(204).send();
     } catch (error) {
-      const errorMessage = "An error occurred when deleting customer:";
+      const errorMessage = "An unknown error occurred when deleting customer:";
       if (isCustomError(error)) {
         //console.error(errorMessage, error.message);
         res.status(error.statusCode).json({
@@ -563,7 +568,7 @@ export class CustomerController {
    *         content:
    *           application/json:
    *             example:
-   *               error: "An error occurred when adding credit: <error message>"
+   *               error: "An unknown error occurred when adding credit: <error message>"
    */
   async addCredit(req: Request, res: Response): Promise<void> {
     const { id, amount } = req.body;
@@ -571,7 +576,7 @@ export class CustomerController {
       const updatedCustomer = await this.customerService.addCredit(id, amount);
       res.status(200).json(updatedCustomer);
     } catch (error) {
-      const errorMessage = "An error occurred when adding credit:";
+      const errorMessage = "An unknown error occurred when adding credit:";
       if (isCustomError(error)) {
         //console.error(errorMessage, error.message);
         res.status(error.statusCode).json({
@@ -634,7 +639,7 @@ export class CustomerController {
    *                   type: string
    *                   example: "Invalid sort order. Use 'asc' or 'desc'."
    *       500:
-   *         description: An error occurred
+   *         description: An unknown error occurred
    *         content:
    *           application/json:
    *             schema:
@@ -642,7 +647,7 @@ export class CustomerController {
    *               properties:
    *                 error:
    *                   type: string
-   *                   example: "An error occurred while sorting customers by credit: <error message>"
+   *                   example: "An unknown error occurred while sorting customers by credit: <error message>"
    */
   async sortCustomersByCredit(req: Request, res: Response): Promise<void> {
     const order = req.query.order as string | undefined;
@@ -654,7 +659,7 @@ export class CustomerController {
       res.status(200).json(sortedCustomers);
     } catch (error) {
       const errorMessage =
-        "An error occurred while sorting customers by credit:";
+        "An unknown error occurred while sorting customers by credit:";
       if (isCustomError(error)) {
         //console.error(errorMessage, error.message);
         res.status(error.statusCode).json({

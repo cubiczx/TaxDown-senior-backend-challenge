@@ -54,6 +54,7 @@ export class CustomerService {
    * @returns {Promise<Customer | undefined>} - The found customer if successful, or undefined if not
    */
   async findById(id: string): Promise<Customer | undefined> {
+    await ValidationUtils.validateCustomerExists(id, this.customerRepository);
     return this.customerRepository.findById(id);
   }
 
@@ -80,7 +81,7 @@ export class CustomerService {
     }
 
     // Validate and update properties only if provided
-    if (name !== undefined) {
+    if (name !== undefined && customer.getName() !== name) {
       customer.setName(name);
     }
 
@@ -92,7 +93,7 @@ export class CustomerService {
       customer.setEmail(email);
     }
 
-    if (availableCredit !== undefined) {
+    if (availableCredit !== undefined && customer.getAvailableCredit() !== availableCredit) {
       customer.setAvailableCredit(availableCredit);
     }
 

@@ -2,7 +2,7 @@ import { MongoDBCustomerRepository } from "../../../../../infrastructure/persist
 import { Customer } from "../../../../../domain/Customer";
 import { CustomerNotFoundException } from "../../../../../exceptions/CustomerNotFoundException";
 import dotenv from "dotenv";
-import { MongoClient, ObjectId } from "mongodb";
+import { MongoClient, ObjectId, MongoNotConnectedError } from "mongodb";
 
 // Load environment variables from .env.test
 dotenv.config({ path: ".env.test" });
@@ -33,6 +33,18 @@ describe("MongoDBCustomerRepository", () => {
   afterAll(async () => {
     await client.db(dbName).collection(collectionName).drop(); // Delete the test collection
     await client.close(); // Disconnect after testing
+  });
+
+  it("should confirm client is connected", async () => {
+    const result = await client.db(dbName).command({ ping: 1 });
+    expect(result).toHaveProperty("ok", 1);
+  });
+
+  it.skip("should disconnect from Mongo", async () => {
+    await mongoDBCustomerRepository.disconnect();
+
+    await expect(client.db(dbName).collection(collectionName).findOne({}))
+      .rejects.toThrow(MongoNotConnectedError);
   });
 
   it("should create a new customer", async () => {
@@ -148,6 +160,11 @@ describe("MongoDBCustomerRepository", () => {
     ).rejects.toThrow(CustomerNotFoundException);
   });
 
+  it("should throw CustomerNotFoundException when deleting a non-existent customer", async () => {
+    const nonExistentCustomerId = new ObjectId().toString();
+    await expect(mongoDBCustomerRepository.delete(nonExistentCustomerId)).rejects.toThrow(CustomerNotFoundException);
+  });
+
   it("should find customers with available credit greater than or equal to the given amount", async () => {
     const customer1 = new Customer(
       '1234',
@@ -187,5 +204,21 @@ describe("MongoDBCustomerRepository", () => {
     await expect(
       mongoDBCustomerRepository.findById(customerId)
     ).rejects.toThrow(CustomerNotFoundException);
+  });
+
+  it("should retrieve all customers", async () => {
+    const customer1 = new Customer(new ObjectId().toString(), "John Doe", "john@example.com", 100);
+    const customer2 = new Customer(new ObjectId().toString(), "Jane Doe", "jane@example.com", 150);
+    await mongoDBCustomerRepository.create(customer1);
+    await mongoDBCustomerRepository.create(customer2);
+
+    const customers = await mongoDBCustomerRepository.findAll();
+    expect(customers).toHaveLength(2);
+    expect(customers).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ name: "John Doe" }),
+        expect.objectContaining({ name: "Jane Doe" }),
+      ])
+    );
   });
 });

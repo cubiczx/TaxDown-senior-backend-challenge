@@ -83,9 +83,6 @@ export class CustomerControllerLambda {
    *                 EmptyName:
    *                   summary: Name cannot be empty
    *                   value: { "message": "Name cannot be empty.", "statusCode": 400 }
-   *                 NegativeCreditAmountException:
-   *                   summary: Credit amount cannot be negative
-   *                   value: { "message": "Credit amount cannot be negative.", "statusCode": 400 }
    *       409:
    *         description: Email already in use
    *         content:
@@ -122,7 +119,7 @@ export class CustomerControllerLambda {
     } catch (error) {
       return this.handleErrorLambda(
         error,
-        "An error occurred when creating customer:"
+        "An unknown error occurred when creating customer:"
       );
     }
   }
@@ -373,7 +370,7 @@ export class CustomerControllerLambda {
    *         content:
    *           application/json:
    *             example:
-   *               error: "An error occurred when updating customer: <error message>"
+   *               error: "An unknown error occurred when updating customer: <error message>"
    */
   async updateCustomerLambda(req: any): Promise<APIGatewayProxyResult> {
     try {
@@ -401,7 +398,7 @@ export class CustomerControllerLambda {
     } catch (error) {
       return this.handleErrorLambda(
         error,
-        "An error occurred when updating customer:"
+        "An unknown error occurred when updating customer:"
       );
     }
   }
@@ -458,7 +455,7 @@ export class CustomerControllerLambda {
    *         content:
    *           application/json:
    *             example:
-   *               error: "An error occurred when deleting customer: <error message>"
+   *               error: "An unknown error occurred when deleting customer: <error message>"
    */
   async deleteCustomerLambda(req: any): Promise<APIGatewayProxyResult> {
     try {
@@ -471,7 +468,7 @@ export class CustomerControllerLambda {
     } catch (error) {
       return this.handleErrorLambda(
         error,
-        "An error occurred when deleting customer:"
+        "An unknown error occurred when deleting customer:"
       );
     }
   }
@@ -562,7 +559,7 @@ export class CustomerControllerLambda {
    *         content:
    *           application/json:
    *             example:
-   *               error: "An error occurred when adding credit: <error message>"
+   *               error: "An unknown error occurred when adding credit: <error message>"
    */
   async addCreditLambda(req: any): Promise<APIGatewayProxyResult> {
     try {
@@ -575,7 +572,7 @@ export class CustomerControllerLambda {
     } catch (error) {
       return this.handleErrorLambda(
         error,
-        "An error occurred when adding credit:"
+        "An unknown error occurred when adding credit:"
       );
     }
   }
@@ -635,7 +632,7 @@ export class CustomerControllerLambda {
    *               properties:
    *                 error:
    *                   type: string
-   *                   example: "An error occurred while sorting customers by credit: <error message>"
+   *                   example: "An unknown error occurred while sorting customers by credit: <error message>"
    */
   async sortCustomersByCreditLambda(req: any): Promise<APIGatewayProxyResult> {
     const order = req.queryStringParameters?.order || "desc";
@@ -651,7 +648,7 @@ export class CustomerControllerLambda {
     } catch (error) {
       return this.handleErrorLambda(
         error,
-        "An error occurred while sorting customers by credit:"
+        "An unknown error occurred while sorting customers by credit:"
       );
     }
   }
@@ -682,7 +679,7 @@ export class CustomerControllerLambda {
       return {
         statusCode: 500,
         body: JSON.stringify({
-          error: errorMessage + (error as Error).message,
+          error: errorMessage + ' ' + (error as Error).message,
         }),
       };
     }

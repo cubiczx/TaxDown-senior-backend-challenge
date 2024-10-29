@@ -57,9 +57,13 @@ export class ValidationUtils {
     }
   }
 
+  
   /**
-   * Validates the existence of a customer with the given ID in the customer repository.
+   * Validates that the provided customer id exists in the repository.
+   * Throws InvalidTypeException if the id is not a string containing exactly 9 alphanumeric characters.
    * Throws CustomerNotFoundException if the customer does not exist.
+   * @param {string} id - The id of the customer to check
+   * @param {CustomerRepositoryInterface} customerRepository - The repository to check for existing customers
    */
   static async validateCustomerExists(
     id: string,
@@ -67,6 +71,13 @@ export class ValidationUtils {
   ): Promise<void> {
     if (typeof id !== "string") {
       throw new InvalidTypeException("id", "string", id);
+    }
+    if (!/^[a-z0-9]{9}$/.test(id)) {
+      throw new InvalidTypeException(
+        "id",
+        "string containing exactly 9 alphanumeric characters",
+        id
+      );
     }
     const existingCustomer = await customerRepository.findById(id);
     if (!existingCustomer) {

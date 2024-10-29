@@ -15,6 +15,15 @@ describe("InMemoryCustomerRepository", () => {
     expect(createdCustomer).toEqual(customer);
   });
 
+  it("should find all customers", async () => {
+    const customer1 = new Customer("1", "John Doe", "john@example.com", 100);
+    const customer2 = new Customer("2", "Jane Doe", "jane@example.com", 150);
+    await repository.create(customer1);
+    await repository.create(customer2);
+    const customers = await repository.findAll();
+    expect(customers).toEqual([customer1, customer2]);
+  });
+
   it("should find a customer by ID", async () => {
     const customer = new Customer("1", "John Doe", "john@example.com", 100);
     await repository.create(customer);
@@ -23,7 +32,21 @@ describe("InMemoryCustomerRepository", () => {
   });
 
   it("should return undefined if customer not found by ID", async () => {
-    const foundCustomer = await repository.findById("non-existent-id");
+    const foundCustomer = await repository.findById("12345678a");
+    expect(foundCustomer).toBeUndefined();
+  });
+
+  it("should find a customer by email", async () => {
+    const customer = new Customer("1", "John Doe", "john@example.com", 100);
+    await repository.create(customer);
+    const foundCustomer = await repository.findByEmail("john@example.com");
+    expect(foundCustomer).toEqual(customer);
+  });
+
+  it("should return undefined if customer not found by email", async () => {
+    const foundCustomer = await repository.findByEmail(
+      "nonexistent@example.com"
+    );
     expect(foundCustomer).toBeUndefined();
   });
 

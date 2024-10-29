@@ -1,6 +1,5 @@
 import { ValidationUtils } from "../../../utils/ValidationUtils";
 import { InMemoryCustomerRepository } from "../../../infrastructure/persistence/repositories/InMemoryCustomerRepository";
-
 import { InvalidEmailFormatException } from "../../../exceptions/InvalidEmailFormatException";
 import { EmailAlreadyInUseException } from "../../../exceptions/EmailAlreadyInUseException";
 import { CustomerNotFoundException } from "../../../exceptions/CustomerNotFoundException";
@@ -93,7 +92,7 @@ describe("ValidationUtils", () => {
     it("should throw CustomerNotFoundException if customer ID does not exist in repository", async () => {
       await expect(
         ValidationUtils.validateCustomerExists(
-          "non-existent-id",
+          "12345678a",
           customerRepository
         )
       ).rejects.toThrow(CustomerNotFoundException);
@@ -101,16 +100,34 @@ describe("ValidationUtils", () => {
 
     it("should pass if customer exists in repository", async () => {
       const customer1 = new Customer(
-        "1",
+        "12345678a",
         "John Doe",
         "john.doe@example.com",
         500
       );
       await customerRepository.create(customer1);
       await expect(
-        ValidationUtils.validateCustomerExists("1", customerRepository)
+        ValidationUtils.validateCustomerExists("12345678a", customerRepository)
       ).resolves.not.toThrow();
     });
+  });
+
+  it("should throw CustomerNotFoundException if customer ID is invalid", async () => {
+    await expect(
+      ValidationUtils.validateCustomerExists(
+        "invalid-id",
+        customerRepository
+      )
+    ).rejects.toThrow(InvalidTypeException);
+  });
+
+  it("should throw CustomerNotFoundException if customer ID is invalid", async () => {
+    await expect(
+      ValidationUtils.validateCustomerExists(
+        12345678 as any,
+        customerRepository
+      )
+    ).rejects.toThrow(InvalidTypeException);
   });
 
   describe("validateAmount", () => {

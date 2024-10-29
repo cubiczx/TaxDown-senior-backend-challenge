@@ -1,4 +1,3 @@
-import request from "supertest";
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { CustomerControllerLambda } from "../../../../interfaces/controllers/CustomerControllerLambda";
 import { CustomerService } from "../../../../application/CustomerService";
@@ -178,6 +177,34 @@ describe("CustomerControllerLambda", () => {
         "Invalid type for property amount: expected number, but received string."
       );
     });
+
+    it("should return a 500 error when an unexpected error occurs", async () => {
+      jest
+        .spyOn(customerService, "create")
+        .mockRejectedValue(new Error("Unexpected error"));
+
+      const event: APIGatewayProxyEvent = {
+        body: JSON.stringify({
+          name: "John Doe",
+          email: "john.doe@example.com",
+          availableCredit: 1000,
+        }),
+        pathParameters: {},
+        queryStringParameters: {},
+      } as any;
+
+      const result: APIGatewayProxyResult =
+        await customerController.createCustomerLambda(event);
+
+      expect(result.statusCode).toBe(500);
+      const response = JSON.parse(result.body);
+      expect(response.error).toBe(
+        "An unknown error occurred when creating customer: Unexpected error"
+      );
+
+      // Restore the `create` method to its original behavior after testing
+      jest.restoreAllMocks();
+    });
   });
 
   describe("CustomerController - List Customers Lambda", () => {
@@ -194,6 +221,30 @@ describe("CustomerControllerLambda", () => {
       expect(result.statusCode).toBe(200);
       const customers = JSON.parse(result.body);
       expect(Array.isArray(customers)).toBe(true);
+    });
+
+    it("should return a 500 error when an unexpected error occurs", async () => {
+      jest
+        .spyOn(customerService, "list")
+        .mockRejectedValue(new Error("Unexpected error"));
+
+      const event: APIGatewayProxyEvent = {
+        pathParameters: {},
+        queryStringParameters: {},
+        body: null,
+      } as any;
+
+      const result: APIGatewayProxyResult =
+        await customerController.listCustomersLambda(event);
+
+      expect(result.statusCode).toBe(500);
+      const response = JSON.parse(result.body);
+      expect(response.error).toBe(
+        "An unknown error occurred when retrieving customers: Unexpected error"
+      );
+
+      // Restore the `list` method to its original behavior after testing
+      jest.restoreAllMocks();
     });
   });
 
@@ -234,7 +285,104 @@ describe("CustomerControllerLambda", () => {
     it("should return 404 when customer not found", async () => {
       const event: APIGatewayProxyEvent = {
         pathParameters: {
-          id: "9999",
+          id: "12345678a",
+        },
+        queryStringParameters: {},
+        body: null,
+      } as any;
+
+      const result: APIGatewayProxyResult =
+        await customerController.getCustomerByIdLambda(event);
+
+      expect(result.statusCode).toBe(404);
+      const response = JSON.parse(result.body);
+      expect(response.error).toBe("Customer not found.");
+    });
+
+    it("should return 400 when customer id is not valid", async () => {
+      const event: APIGatewayProxyEvent = {
+        pathParameters: {
+          id: "invalid-id",
+        },
+        queryStringParameters: {},
+        body: null,
+      } as any;
+
+      const result: APIGatewayProxyResult =
+        await customerController.getCustomerByIdLambda(event);
+
+      expect(result.statusCode).toBe(400);
+      const response = JSON.parse(result.body);
+      expect(response.error).toBe(
+        "Invalid type for property id: expected string containing exactly 9 alphanumeric characters, but received string."
+      );
+    });
+
+    it("should return a 500 error when an unexpected error occurs", async () => {
+      jest
+        .spyOn(customerService, "findById")
+        .mockRejectedValue(new Error("Unexpected error"));
+
+      const eventCreate: APIGatewayProxyEvent = {
+        body: JSON.stringify({
+          name: "John Doe",
+          email: "john.doe@example.com",
+          availableCredit: 1000,
+        }),
+        pathParameters: {},
+        queryStringParameters: {},
+      } as any;
+
+      const resultCreate: APIGatewayProxyResult =
+        await customerController.createCustomerLambda(eventCreate);
+
+      expect(resultCreate.statusCode).toBe(201);
+      const customerCreate = JSON.parse(resultCreate.body);
+
+      const event: APIGatewayProxyEvent = {
+        pathParameters: {
+          id: customerCreate.id,
+        },
+        queryStringParameters: {},
+        body: null,
+      } as any;
+
+      const result: APIGatewayProxyResult =
+        await customerController.getCustomerByIdLambda(event);
+
+      expect(result.statusCode).toBe(500);
+      const response = JSON.parse(result.body);
+      expect(response.error).toBe(
+        "An unknown error occurred while retrieving the customer: Unexpected error"
+      );
+
+      // Restore the `findById` method to its original behavior after testing
+      jest.restoreAllMocks();
+    });
+
+    it("should return a 404 error when a customer is not found", async () => {
+      // Mock `findById` to return a `Promise` that resolves to `undefined`
+      jest.spyOn(customerService, "findById").mockResolvedValue(undefined);
+
+      const eventCreate: APIGatewayProxyEvent = {
+        body: JSON.stringify({
+          name: "John Doe",
+          email: "john.doe@example.com",
+          availableCredit: 1000,
+        }),
+        pathParameters: {},
+        queryStringParameters: {},
+      } as any;
+
+      const resultCreate: APIGatewayProxyResult =
+        await customerController.createCustomerLambda(eventCreate);
+
+      expect(resultCreate.statusCode).toBe(201);
+      const customerCreate = JSON.parse(resultCreate.body);
+
+      const event: APIGatewayProxyEvent = {
+        pathParameters: {
+          id: customerCreate.id,
         },
         queryStringParameters: {},
         body: null,
@@ -246,6 +394,9 @@ describe("CustomerControllerLambda", () => {
       expect(result.statusCode).toBe(404);
       const response = JSON.parse(result.body);
       expect(response.message).toBe("Customer not found.");
+
+      // Restore the original behavior of `findById` after the test
+      jest.restoreAllMocks();
     });
   });
 
@@ -290,7 +441,7 @@ describe("CustomerControllerLambda", () => {
     it("should return 404 when updating a non-existing customer", async () => {
       const event: APIGatewayProxyEvent = {
         pathParameters: {
-          id: "9999", // ID que no existe
+          id: "12345678a",
         },
         body: JSON.stringify({
           name: "Jane Doe",
@@ -306,6 +457,29 @@ describe("CustomerControllerLambda", () => {
       expect(result.statusCode).toBe(404);
       const response = JSON.parse(result.body);
       expect(response.error).toBe("Customer not found.");
+    });
+
+    it("should return 404 when updating a customer with invalid id", async () => {
+      const event: APIGatewayProxyEvent = {
+        pathParameters: {
+          id: "invalid-id",
+        },
+        body: JSON.stringify({
+          name: "Jane Doe",
+          email: "jane.doe@example.com",
+          availableCredit: 1500,
+        }),
+        queryStringParameters: {},
+      } as any;
+
+      const result: APIGatewayProxyResult =
+        await customerController.updateCustomerLambda(event);
+
+      expect(result.statusCode).toBe(400);
+      const response = JSON.parse(result.body);
+      expect(response.error).toBe(
+        "Invalid type for property id: expected string containing exactly 9 alphanumeric characters, but received string."
+      );
     });
 
     it("should return 400 when updating with no valid credit", async () => {
@@ -531,6 +705,52 @@ describe("CustomerControllerLambda", () => {
       const response = JSON.parse(result.body);
       expect(response.error).toBe("Email is already in use.");
     });
+
+    it("should return a 500 error when an unexpected error occurs", async () => {
+      jest
+        .spyOn(customerService, "update")
+        .mockRejectedValue(new Error("Unexpected error"));
+
+      const eventCreate: APIGatewayProxyEvent = {
+        body: JSON.stringify({
+          name: "John Doe",
+          email: "john.doe@example.com",
+          availableCredit: 1000,
+        }),
+        pathParameters: {},
+        queryStringParameters: {},
+      } as any;
+
+      const resultCreate: APIGatewayProxyResult =
+        await customerController.createCustomerLambda(eventCreate);
+
+      expect(resultCreate.statusCode).toBe(201);
+      const customerCreate = JSON.parse(resultCreate.body);
+
+      const event: APIGatewayProxyEvent = {
+        pathParameters: {
+          id: customerCreate.id,
+        },
+        body: JSON.stringify({
+          name: "Jane Doe",
+          email: "jane.doe@example.com",
+          availableCredit: 1500,
+        }),
+        queryStringParameters: {},
+      } as any;
+
+      const result: APIGatewayProxyResult =
+        await customerController.updateCustomerLambda(event);
+
+      expect(result.statusCode).toBe(500);
+      const response = JSON.parse(result.body);
+      expect(response.error).toBe(
+        "An unknown error occurred when updating customer: Unexpected error"
+      );
+
+      // Restore the `update` method to its original behavior after testing
+      jest.restoreAllMocks();
+    });
   });
 
   describe("CustomerController - Delete Customer Lambda", () => {
@@ -584,10 +804,29 @@ describe("CustomerControllerLambda", () => {
       );
     });
 
+    it("should return 400 if id is invalid", async () => {
+      const event: APIGatewayProxyEvent = {
+        pathParameters: {
+          id: "invalid-id",
+        },
+        queryStringParameters: {},
+        body: null,
+      } as any;
+
+      const result: APIGatewayProxyResult =
+        await customerController.deleteCustomerLambda(event);
+
+      expect(result.statusCode).toBe(400);
+      const response = JSON.parse(result.body);
+      expect(response.error).toBe(
+        "Invalid type for property id: expected string containing exactly 9 alphanumeric characters, but received string."
+      );
+    });
+
     it("should return 404 when deleting a non-existing customer", async () => {
       const event: APIGatewayProxyEvent = {
         pathParameters: {
-          id: "9999",
+          id: "12345678a",
         },
         queryStringParameters: {},
         body: null,
@@ -599,6 +838,48 @@ describe("CustomerControllerLambda", () => {
       expect(result.statusCode).toBe(404);
       const response = JSON.parse(result.body);
       expect(response.error).toBe("Customer not found.");
+    });
+
+    it("should return a 500 error when an unexpected error occurs", async () => {
+      jest
+        .spyOn(customerService, "delete")
+        .mockRejectedValue(new Error("Unexpected error"));
+
+      const eventCreate: APIGatewayProxyEvent = {
+        body: JSON.stringify({
+          name: "John Doe",
+          email: "john.doe@example.com",
+          availableCredit: 1000,
+        }),
+        pathParameters: {},
+        queryStringParameters: {},
+      } as any;
+
+      const resultCreate: APIGatewayProxyResult =
+        await customerController.createCustomerLambda(eventCreate);
+
+      expect(resultCreate.statusCode).toBe(201);
+      const customerCreate = JSON.parse(resultCreate.body);
+
+      const event: APIGatewayProxyEvent = {
+        pathParameters: {
+          id: customerCreate.id,
+        },
+        queryStringParameters: {},
+        body: null,
+      } as any;
+
+      const result: APIGatewayProxyResult =
+        await customerController.deleteCustomerLambda(event);
+
+      expect(result.statusCode).toBe(500);
+      const response = JSON.parse(result.body);
+      expect(response.error).toBe(
+        "An unknown error occurred when deleting customer: Unexpected error"
+      );
+
+      // Restore the `delete` method to its original behavior after testing
+      jest.restoreAllMocks();
     });
   });
 
@@ -640,7 +921,7 @@ describe("CustomerControllerLambda", () => {
     it("should return 404 when adding credit to a non-existing customer", async () => {
       const event: APIGatewayProxyEvent = {
         body: JSON.stringify({
-          id: "9999",
+          id: "12345678a",
           amount: 100,
         }),
         pathParameters: {},
@@ -653,6 +934,26 @@ describe("CustomerControllerLambda", () => {
       expect(result.statusCode).toBe(404);
       const response = JSON.parse(result.body);
       expect(response.error).toBe("Customer not found.");
+    });
+
+    it("should return 404 when adding credit to a customer with invalid id", async () => {
+      const event: APIGatewayProxyEvent = {
+        body: JSON.stringify({
+          id: "invalid-id",
+          amount: 100,
+        }),
+        pathParameters: {},
+        queryStringParameters: {},
+      } as any;
+
+      const result: APIGatewayProxyResult =
+        await customerController.addCreditLambda(event);
+
+      expect(result.statusCode).toBe(400);
+      const response = JSON.parse(result.body);
+      expect(response.error).toBe(
+        "Invalid type for property id: expected string containing exactly 9 alphanumeric characters, but received string."
+      );
     });
 
     it("should return 452 when adding negative credit", async () => {
@@ -725,26 +1026,72 @@ describe("CustomerControllerLambda", () => {
         `Invalid type for property amount: expected number, but received string.`
       );
     });
+
+    it("should return a 500 error when an unexpected error occurs", async () => {
+      jest
+        .spyOn(customerService, "addCredit")
+        .mockRejectedValue(new Error("Unexpected error"));
+
+      const eventCreate: APIGatewayProxyEvent = {
+        body: JSON.stringify({
+          name: "John Doe",
+          email: "john.doe@example.com",
+          availableCredit: 1000,
+        }),
+        pathParameters: {},
+        queryStringParameters: {},
+      } as any;
+
+      const resultCreate: APIGatewayProxyResult =
+        await customerController.createCustomerLambda(eventCreate);
+
+      expect(resultCreate.statusCode).toBe(201);
+      const customerCreate = JSON.parse(resultCreate.body);
+
+      const event: APIGatewayProxyEvent = {
+        body: JSON.stringify({
+          id: customerCreate.id,
+          amount: 100,
+        }),
+        pathParameters: {},
+        queryStringParameters: {},
+      } as any;
+
+      const result: APIGatewayProxyResult =
+        await customerController.addCreditLambda(event);
+
+      expect(result.statusCode).toBe(500);
+      const response = JSON.parse(result.body);
+      expect(response.error).toBe(
+        "An unknown error occurred when adding credit: Unexpected error"
+      );
+
+      // Restore the `addCredit` method to its original behavior after testing
+      jest.restoreAllMocks();
+    });
   });
 
-  describe("CustomerController - Sort customer by credit Lambda", () => {
-    it("should return 200 and a sorted list of customers when order is valid", async () => {
-      const sortedCustomersMock = [
-        new Customer("1", "Customer One", "one@example.com", 300),
-        new Customer("2", "Customer Two", "two@example.com", 200),
-        new Customer("3", "Customer Three", "three@example.com", 100),
-      ];
+  describe("CustomerControllerLambda - sortCustomersByCreditLambda", () => {
+    const sortedCustomersMock = [
+      new Customer("1", "Customer One", "one@example.com", 300),
+      new Customer("2", "Customer Two", "two@example.com", 200),
+      new Customer("3", "Customer Three", "three@example.com", 100),
+    ];
 
-      // Mockear el método de servicio para devolver la lista de clientes simulada
+    beforeEach(() => {
       jest
         .spyOn(customerService, "sortCustomersByCredit")
         .mockResolvedValue(sortedCustomersMock);
+    });
 
+    afterEach(() => {
+      jest.restoreAllMocks();
+    });
+
+    it("should return 200 and a sorted list of customers when order is 'asc'", async () => {
       const event: APIGatewayProxyEvent = {
         pathParameters: {},
-        queryStringParameters: {
-          order: "asc",
-        },
+        queryStringParameters: { order: "asc" },
         body: null,
       } as any;
 
@@ -757,11 +1104,67 @@ describe("CustomerControllerLambda", () => {
       expect(customerService.sortCustomersByCredit).toHaveBeenCalledWith("asc");
     });
 
+    it("should return 200 and a sorted list of customers with default order 'desc' when no order is provided", async () => {
+      const event: APIGatewayProxyEvent = {
+        pathParameters: {},
+        queryStringParameters: {},
+        body: null,
+      } as any;
+
+      const result: APIGatewayProxyResult =
+        await customerController.sortCustomersByCreditLambda(event);
+
+      expect(result.statusCode).toBe(200);
+      const response = JSON.parse(result.body);
+      expect(response).toEqual(sortedCustomersMock);
+      expect(customerService.sortCustomersByCredit).toHaveBeenCalledWith(
+        "desc"
+      );
+    });
+
+    it("should return 200 and a sorted list of customers when order is 'desc'", async () => {
+      const event: APIGatewayProxyEvent = {
+        pathParameters: {},
+        queryStringParameters: { order: "desc" },
+        body: null,
+      } as any;
+
+      const result: APIGatewayProxyResult =
+        await customerController.sortCustomersByCreditLambda(event);
+
+      expect(result.statusCode).toBe(200);
+      const response = JSON.parse(result.body);
+      expect(response).toEqual(sortedCustomersMock);
+      expect(customerService.sortCustomersByCredit).toHaveBeenCalledWith(
+        "desc"
+      );
+    });
+
     it("should return 409 if order is invalid in should list all customers", async () => {
+        jest.restoreAllMocks();
+      
+        const event: APIGatewayProxyEvent = {
+          pathParameters: {},
+          queryStringParameters: { order: "invalid-order" },
+          body: null,
+        } as any;
+      
+        const result: APIGatewayProxyResult = await customerController.sortCustomersByCreditLambda(event);
+      
+        expect(result.statusCode).toBe(400);
+        const response = JSON.parse(result.body);
+        expect(response.error).toBe("Invalid sort order. Use 'asc' or 'desc'.");
+      });      
+
+    it("should return a 500 error when an unexpected error occurs", async () => {
+      jest
+        .spyOn(customerService, "sortCustomersByCredit")
+        .mockRejectedValue(new Error("Unexpected error"));
+
       const event: APIGatewayProxyEvent = {
         pathParameters: {},
         queryStringParameters: {
-          order: "invalid-order",
+          order: "asc",
         },
         body: null,
       } as any;
@@ -769,9 +1172,14 @@ describe("CustomerControllerLambda", () => {
       const result: APIGatewayProxyResult =
         await customerController.sortCustomersByCreditLambda(event);
 
-      expect(result.statusCode).toBe(400);
+      expect(result.statusCode).toBe(500);
       const response = JSON.parse(result.body);
-      expect(response.error).toBe("Invalid sort order. Use 'asc' or 'desc'.");
+      expect(response.error).toBe(
+        "An unknown error occurred while sorting customers by credit: Unexpected error"
+      );
+
+      // Restore the `create` method to its original behavior after testing
+      jest.restoreAllMocks();
     });
   });
 });
