@@ -99,6 +99,12 @@ describe("Customer", () => {
         new InvalidTypeException("amount", "number", invalidAvailableCredit)
       );
     });
+
+    it("should create a customer with default availableCredit of 0 if not specified", () => {
+      const customerWithoutCredit = new Customer(id, "John Doe", "john.doe@example.com");
+      expect(customerWithoutCredit.getAvailableCredit()).toBe(0);
+    });
+    
   });
 
   describe("getters", () => {
