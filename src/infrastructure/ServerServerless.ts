@@ -172,8 +172,6 @@ export const sortCustomersByCredit = async (
   return await customerControllerLambda.sortCustomersByCreditLambda(event);
 };
 
-// Endpoint para servir las especificaciones de Swagger
-
 /**
  * Returns the API documentation as a JSON object.
  *

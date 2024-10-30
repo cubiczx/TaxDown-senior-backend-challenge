@@ -1,778 +1,1155 @@
-import request from "supertest";
-import { app } from "../../../../infrastructure/Server";
+import { Request, Response } from "express";
+import { CustomerController } from "../../../../interfaces/controllers/CustomerController";
+import { CustomerService } from "../../../../application/CustomerService";
 import { InMemoryCustomerRepository } from "../../../../infrastructure/persistence/repositories/InMemoryCustomerRepository";
 import { Customer } from "../../../../domain/Customer";
 import { CustomerNotFoundException } from "../../../../exceptions/CustomerNotFoundException";
-import { CustomerService } from "../../../../application/CustomerService";
-import { ValidationUtils } from "../../../../utils/ValidationUtils";
 
-describe("CustomerController Integration Tests", () => {
+describe("CustomerController Integration Tests with InMemoryCustomerRepository", () => {
+  let customerController: CustomerController;
+  let customerService: CustomerService;
   let customerRepository: InMemoryCustomerRepository;
 
-  beforeAll(async () => {
-    customerRepository = app.locals.customerRepository; // Real repository from the context of the app
+  beforeEach(() => {
+    customerRepository = new InMemoryCustomerRepository();
+    customerService = new CustomerService(customerRepository);
+    customerController = new CustomerController(customerService);
   });
 
-  beforeEach(async () => {
-    await customerRepository.clear(); // Clean repository before each test
+  describe("CustomerController - Create Customer", () => {
+    beforeEach(async () => {
+      // Clean the in-memory repository before each test
+      await customerRepository.clear();
+    });
+
+    it("should return 201 and the created customer", async () => {
+      const req = {
+        body: {
+          name: "Customer Four",
+          email: "four@example.com",
+          availableCredit: 400,
+        },
+      } as Request;
+
+      const res = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn(),
+      } as unknown as Response;
+
+      await customerController.createCustomer(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(201);
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          name: "Customer Four",
+          email: "four@example.com",
+          availableCredit: 400,
+        })
+      );
+
+      // Verify that the client was saved to the in-memory repository
+      const customerInRepo = await customerRepository.findByEmail(
+        "four@example.com"
+      );
+      expect(customerInRepo).toBeDefined();
+      expect(customerInRepo?.getName()).toBe("Customer Four");
+    });
+
+    it("should return 400 if email format is invalid when creating a customer", async () => {
+      const req = {
+        body: {
+          name: "Invalid Email Customer",
+          email: "invalid-email-format",
+          availableCredit: 500,
+        },
+      } as Request;
+
+      const res = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn(),
+      } as unknown as Response;
+
+      await customerController.createCustomer(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith({
+        error: "Invalid email format.",
+      });
+    });
+
+    it("should return 400 if email input type is invalid when creating a customer", async () => {
+      const req = {
+        body: {
+          name: "Invalid Type Customer",
+          email: 12345,
+          availableCredit: 600,
+        },
+      } as Request;
+
+      const res = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn(),
+      } as unknown as Response;
+
+      await customerController.createCustomer(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith({
+        error:
+          "Invalid type for property email: expected string, but received number.",
+      });
+    });
+
+    it("should return 409 if email is already in use when creating a customer", async () => {
+      await customerRepository.create(
+        new Customer(
+          "12345678a",
+          "Existing Customer",
+          "existing@example.com",
+          700
+        )
+      );
+
+      const req = {
+        body: {
+          name: "New Customer",
+          email: "existing@example.com", // Already used email
+          availableCredit: 800,
+        },
+      } as Request;
+
+      const res = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn(),
+      } as unknown as Response;
+
+      await customerController.createCustomer(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(409);
+      expect(res.json).toHaveBeenCalledWith({
+        error: "Email is already in use.",
+      });
+    });
+
+    it("should return 400 if name is invalid type when creating a customer", async () => {
+      const req = {
+        body: {
+          name: 12345,
+          email: "valid@example.com",
+          availableCredit: 900,
+        },
+      } as Request;
+
+      const res = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn(),
+      } as unknown as Response;
+
+      await customerController.createCustomer(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith({
+        error:
+          "Invalid type for property name: expected string, but received number.",
+      });
+    });
+
+    it("should return 400 if name is empty when creating a customer", async () => {
+      const req = {
+        body: {
+          name: "",
+          email: "emptyname@example.com",
+          availableCredit: 1000,
+        },
+      } as Request;
+
+      const res = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn(),
+      } as unknown as Response;
+
+      await customerController.createCustomer(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith({
+        error: "Name cannot be empty.",
+      });
+    });
+
+    it("should return 400 if name is too short when creating a customer", async () => {
+      const req = {
+        body: {
+          name: "ab",
+          email: "shortname@example.com",
+          availableCredit: 1100,
+        },
+      } as Request;
+
+      const res = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn(),
+      } as unknown as Response;
+
+      await customerController.createCustomer(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith({
+        error: "Name must be at least 3 characters long.",
+      });
+    });
+
+    it("should return 400 if availableCredit is invalid type when creating a customer", async () => {
+      const req = {
+        body: {
+          name: "Customer Credit",
+          email: "credit@example.com",
+          availableCredit: "notANumber",
+        },
+      } as Request;
+
+      const res = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn(),
+      } as unknown as Response;
+
+      await customerController.createCustomer(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith({
+        error:
+          "Invalid type for property amount: expected number, but received string.",
+      });
+    });
+
+    it("should return a 500 error when an unexpected error occurs", async () => {
+      const req = {
+        body: {
+          name: "Customer Error",
+          email: "error@example.com",
+          availableCredit: 1200,
+        },
+      } as Request;
+
+      const res = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn(),
+      } as unknown as Response;
+
+      // Simulates an unexpected error in the repository
+      const originalCreateMethod =
+        customerRepository.create.bind(customerRepository);
+      customerRepository.create = jest.fn().mockImplementationOnce(() => {
+        throw new Error("Unexpected error");
+      });
+
+      await customerController.createCustomer(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.json).toHaveBeenCalledWith({
+        error:
+          "An unknown error occurred when creating customer: Unexpected error",
+      });
+
+      // Restore the original method after testing
+      customerRepository.create = originalCreateMethod;
+    });
   });
 
-  describe("POST /customers", () => {
-    it("should create a new customer", async () => {
-      const newCustomer = {
-        name: "John Doe",
-        email: "john.doe@example.com",
-        availableCredit: 500,
-      };
-      const response = await request(app).post("/customers").send(newCustomer);
-      expect(response.status).toBe(201);
+  describe("CustomerController - List Customers", () => {
+    beforeEach(async () => {
+      // Clean the in-memory repository before each test
+      await customerRepository.clear();
     });
 
-    it("should create a Customer with default available credit", async () => {
-      const newCustomer = {
-        name: "John Doe",
-        email: "john.doe@example.com",
-      };
-      const response = await request(app).post("/customers").send(newCustomer);
-      expect(response.status).toBe(201);
-      expect(response.body.availableCredit).toBe(0);
+    it("should return 200 and a list of customers", async () => {
+      // Create test clients in the in-memory repository
+      await customerRepository.create(
+        new Customer("12345678a", "Customer One", "one@example.com", 100)
+      );
+      await customerRepository.create(
+        new Customer("23456789a", "Customer Two", "two@example.com", 200)
+      );
+
+      const req = {} as Request;
+      const res = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn(),
+      } as unknown as Response;
+
+      await customerController.listCustomers(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith(
+        expect.arrayContaining([
+          expect.objectContaining({
+            name: "Customer One",
+            email: "one@example.com",
+            availableCredit: 100,
+          }),
+          expect.objectContaining({
+            name: "Customer Two",
+            email: "two@example.com",
+            availableCredit: 200,
+          }),
+        ])
+      );
     });
 
-    it("should return 409 if email is already in use", async () => {
-      const customer = {
-        name: "Jane Doe",
-        email: "jane.doe@example.com",
-        availableCredit: 300,
-      };
-      await request(app).post("/customers").send(customer);
-      const response = await request(app).post("/customers").send(customer);
-      expect(response.status).toBe(409);
+    it("should return a 500 error when an unexpected error occurs", async () => {
+      const req = {} as Request;
+      const res = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn(),
+      } as unknown as Response;
+
+      // Simulates an unexpected error in the repository
+      const originalFindAllMethod =
+        customerRepository.findAll.bind(customerRepository);
+      customerRepository.findAll = jest.fn().mockImplementationOnce(() => {
+        throw new Error("Unexpected error");
+      });
+
+      await customerController.listCustomers(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.json).toHaveBeenCalledWith({
+        error:
+          "An unknown error occurred when retrieving customers: Unexpected error",
+      });
+
+      // Restore the original method after testing
+      customerRepository.findAll = originalFindAllMethod;
     });
 
-    it("should return 400 if email is invalid format", async () => {
-      const invalidCustomer = {
-        name: "Invalid Email",
-        email: "invalid-email",
-        availableCredit: 200,
-      };
-      const response = await request(app)
-        .post("/customers")
-        .send(invalidCustomer);
-      expect(response.status).toBe(400);
+    it("should return the custom error message and status when a custom exception is thrown", async () => {
+      const req = {} as Request;
+      const res = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn(),
+      } as unknown as Response;
+
+      // Simulate a custom exception
+      const originalFindAllMethod =
+        customerRepository.findAll.bind(customerRepository);
+      customerRepository.findAll = jest.fn().mockImplementationOnce(() => {
+        throw new CustomerNotFoundException();
+      });
+
+      await customerController.listCustomers(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(404);
+      expect(res.json).toHaveBeenCalledWith({
+        error: "Customer not found.",
+      });
+
+      // Restore the original method after testing
+      customerRepository.findAll = originalFindAllMethod;
+    });
+  });
+
+  describe("CustomerController - Get Customer", () => {
+    beforeEach(async () => {
+      // Clean the in-memory repository before each test
+      await customerRepository.clear();
     });
 
-    it("should return 400 if name is empty", async () => {
-      const invalidCustomer = {
-        name: "",
-        email: "empty.name@example.com",
-        availableCredit: 300,
-      };
-      const response = await request(app)
-        .post("/customers")
-        .send(invalidCustomer);
-      expect(response.status).toBe(400);
+    it("should get a customer by ID", async () => {
+      // Clean the in-memory repository before each test
+      const customer = new Customer(
+        "12345678a",
+        "Customer One",
+        "one@example.com",
+        100
+      );
+      await customerRepository.create(customer);
+
+      const req = { params: { id: "12345678a" } } as unknown as Request;
+      const res = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn(),
+      } as unknown as Response;
+
+      await customerController.getCustomerById(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          name: "Customer One",
+          email: "one@example.com",
+          availableCredit: 100,
+        })
+      );
     });
 
-    it("should return 400 if name is too short", async () => {
-      const invalidCustomer = {
-        name: "Jo",
-        email: "short.name@example.com",
-        availableCredit: 300,
-      };
-      const response = await request(app)
-        .post("/customers")
-        .send(invalidCustomer);
-      expect(response.status).toBe(400);
+    it("should return 404 when customer not found", async () => {
+      const req = { params: { id: "12345678a" } } as unknown as Request;
+      const res = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn(),
+      } as unknown as Response;
+
+      await customerController.getCustomerById(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(404);
+      expect(res.json).toHaveBeenCalledWith({
+        error: "Customer not found.",
+      });
+    });
+
+    it("should return a 404 error when a customer is not found", async () => {
+      // Simulate that the customerService findById method returns undefined
+      const originalFindByIdMethod =
+        customerService.findById.bind(customerService);
+      customerService.findById = jest.fn().mockReturnValue(undefined);
+
+      const req = { params: { id: "12345678a" } } as unknown as Request;
+      const res = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn(),
+      } as unknown as Response;
+
+      await customerController.getCustomerById(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(404);
+      expect(res.json).toHaveBeenCalledWith({
+        error: "Customer not found.",
+      });
+
+      // Restaurar el método original después de la prueba
+      customerService.findById = originalFindByIdMethod;
+    });
+
+    it("should return 400 when customer id is not valid", async () => {
+      const req = { params: { id: "invalid-id" } } as unknown as Request;
+      const res = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn(),
+      } as unknown as Response;
+
+      await customerController.getCustomerById(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith({
+        error:
+          "Invalid type for property id: expected string containing exactly 9 alphanumeric characters, but received string.",
+      });
+    });
+
+    it("should return a 500 error when an unexpected error occurs", async () => {
+      const req = { params: { id: "12345678a" } } as unknown as Request;
+      const res = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn(),
+      } as unknown as Response;
+
+      // Simulates an unexpected error in the repository
+      const originalFindByIdMethod =
+        customerRepository.findById.bind(customerRepository);
+      customerRepository.findById = jest.fn().mockImplementationOnce(() => {
+        throw new Error("Unexpected error");
+      });
+
+      await customerController.getCustomerById(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.json).toHaveBeenCalledWith({
+        error:
+          "An unknown error occurred while retrieving the customer: Unexpected error",
+      });
+
+      // Restore the original method after testing
+      customerRepository.findById = originalFindByIdMethod;
+    });
+  });
+
+  describe("CustomerController - Update Customer", () => {
+    beforeEach(async () => {
+      // Clean the in-memory repository before each test
+      await customerRepository.clear();
+    });
+
+    it("should update a customer", async () => {
+      // Create an initial client in the database
+      const customer = new Customer(
+        "12345678a",
+        "Customer One",
+        "one@example.com",
+        100
+      );
+      await customerRepository.create(customer);
+
+      const req = {
+        params: { id: "12345678a" },
+        body: {
+          name: "Updated Customer",
+          email: "one@example.com",
+          availableCredit: 150,
+        },
+      } as unknown as Request;
+
+      const res = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn(),
+      } as unknown as Response;
+
+      await customerController.updateCustomer(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: "12345678a",
+          name: "Updated Customer",
+          email: "one@example.com",
+          availableCredit: 150,
+        })
+      );
+
+      const updatedCustomer = await customerRepository.findById("12345678a");
+      expect(updatedCustomer).toBeDefined();
+      expect(updatedCustomer!.getAvailableCredit()).toBe(150);
+      expect(updatedCustomer!.getName()).toBe("Updated Customer");
+    });
+
+    it("should return 404 when updating a non-existing customer", async () => {
+      const req = {
+        params: { id: "12345678a" },
+        body: { name: "Updated Customer", availableCredit: 150 },
+      } as unknown as Request;
+      const res = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn(),
+      } as unknown as Response;
+
+      await customerController.updateCustomer(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(404);
+      expect(res.json).toHaveBeenCalledWith({
+        error: "Customer not found.",
+      });
+    });
+
+    it("should return 404 when updating a customer with invalid id", async () => {
+      const req = {
+        params: { id: "invalid-id" },
+        body: { name: "Updated Customer", availableCredit: 150 },
+      } as unknown as Request;
+      const res = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn(),
+      } as unknown as Response;
+
+      await customerController.updateCustomer(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith({
+        error:
+          "Invalid type for property id: expected string containing exactly 9 alphanumeric characters, but received string.",
+      });
     });
 
     it("should return 400 if name is not a string", async () => {
-      const invalidCustomer = {
-        name: 12345,
-        email: "non.string@example.com",
-        availableCredit: 300,
-      };
-      const response = await request(app)
-        .post("/customers")
-        .send(invalidCustomer);
-      expect(response.status).toBe(400);
-    });
-
-    it("should return 400 if email is not a string", async () => {
-      const invalidCustomer = {
-        name: "Valid Name",
-        email: 12345,
-        availableCredit: 300,
-      };
-      const response = await request(app)
-        .post("/customers")
-        .send(invalidCustomer);
-      expect(response.status).toBe(400);
-    });
-
-    it("should return 400 if availableCredit is not a number", async () => {
-      const invalidCustomer = {
-        name: "Valid Name",
-        email: "valid@example.com",
-        availableCredit: "not-a-number",
-      };
-      const response = await request(app)
-        .post("/customers")
-        .send(invalidCustomer);
-      expect(response.status).toBe(400);
-    });
-
-    it("should return a 500 error when an unexpected error occurs", async () => {
-      const errorMessage = "Unexpected error";
-      const mockCustomerService = jest
-        .spyOn(CustomerService.prototype, "create")
-        .mockImplementationOnce(() => {
-          throw new Error(errorMessage);
-        });
-
-      const newCustomer = {
-        name: "John Doe",
-        email: "john.doe@example.com",
-        availableCredit: 500,
-      };
-      const response = await request(app).post("/customers").send(newCustomer);
-      expect(response.status).toBe(500);
-      expect(response.body.error).toContain(
-        "An unknown error occurred when creating customer:"
+      const customer = new Customer(
+        "12345678a",
+        "Customer One",
+        "one@example.com",
+        100
       );
+      await customerRepository.create(customer);
 
-      mockCustomerService.mockRestore();
+      const req = {
+        params: { id: "12345678a" },
+        body: { name: 123, availableCredit: 150 },
+      } as unknown as Request;
+      const res = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn(),
+      } as unknown as Response;
+
+      await customerController.updateCustomer(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith({
+        error:
+          "Invalid type for property name: expected string, but received number.",
+      });
     });
-  });
 
-  describe("GET /customers", () => {
-    it("should retrieve a list of customers", async () => {
-      const response = await request(app).get("/customers");
-      expect(response.status).toBe(200);
-      expect(Array.isArray(response.body)).toBe(true);
-    });
-
-    it("should return an empty array if no customers exist", async () => {
-      await customerRepository.clear();
-      const response = await request(app).get("/customers");
-      expect(response.status).toBe(200);
-      expect(response.body).toEqual([]);
-    });
-
-    it("should return a 500 error when an unexpected error occurs", async () => {
-      const errorMessage = "Unexpected error";
-      const mockCustomerService = jest
-        .spyOn(CustomerService.prototype, "list")
-        .mockImplementationOnce(() => {
-          throw new Error(errorMessage);
-        });
-
-      const response = await request(app).get("/customers");
-      expect(response.status).toBe(500);
-      expect(response.body.error).toContain(
-        "An unknown error occurred when retrieving customers:"
+    it("should return 400 if name is empty", async () => {
+      const customer = new Customer(
+        "12345678a",
+        "Customer One",
+        "one@example.com",
+        100
       );
+      await customerRepository.create(customer);
 
-      mockCustomerService.mockRestore();
-    });
+      const req = {
+        params: { id: "12345678a" },
+        body: { name: "", availableCredit: 150 },
+      } as unknown as Request;
+      const res = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn(),
+      } as unknown as Response;
 
-    it("should return a 404 error when customer not found", async () => {
-      const mockCustomerService = jest
-        .spyOn(CustomerService.prototype, "list")
-        .mockImplementationOnce(() => {
-          throw new CustomerNotFoundException();
-        });
+      await customerController.updateCustomer(req, res);
 
-      const response = await request(app).get("/customers");
-      expect(response.status).toBe(404);
-      expect(response.body.error).toBe("Customer not found.");
-
-      mockCustomerService.mockRestore();
-    });
-  });
-
-  describe("GET /customers/:id", () => {
-    it("should return a customer if found", async () => {
-      const newCustomer = await request(app).post("/customers").send({
-        name: "Customer To get",
-        email: "get.me@example.com",
-        availableCredit: 200,
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith({
+        error: "Name cannot be empty.",
       });
+    });
 
-      const response = await request(app).get(
-        `/customers/${newCustomer.body.id}`
+    it("should return 400 if name is shorter than 3 characters", async () => {
+      const customer = new Customer(
+        "12345678a",
+        "Customer One",
+        "one@example.com",
+        100
       );
+      await customerRepository.create(customer);
 
-      expect(response.status).toBe(200);
+      const req = {
+        params: { id: "12345678a" },
+        body: { name: "A", availableCredit: 150 },
+      } as unknown as Request;
+      const res = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn(),
+      } as unknown as Response;
+
+      await customerController.updateCustomer(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith({
+        error: "Name must be at least 3 characters long.",
+      });
     });
 
-    it("should return 404 if customer not found", async () => {
-      const response = await request(app).get("/customers/12345678a");
-
-      expect(response.status).toBe(404);
-      expect(response.body).toHaveProperty("error", "Customer not found.");
-    });
-
-    it("should return 400 if id is not a valid id", async () => {
-      const response = await request(app).get("/customers/a");
-
-      expect(response.status).toBe(400);
-      expect(response.body).toHaveProperty(
-        "error",
-        "Invalid type for property id: expected string containing exactly 9 alphanumeric characters, but received string."
+    it("should return 400 if email is not in a valid format", async () => {
+      const customer = new Customer(
+        "12345678a",
+        "Customer One",
+        "one@example.com",
+        100
       );
+      await customerRepository.create(customer);
+
+      const req = {
+        params: { id: "12345678a" },
+        body: {
+          name: "Updated Customer",
+          email: "invalid-email",
+          availableCredit: 150,
+        },
+      } as unknown as Request;
+      const res = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn(),
+      } as unknown as Response;
+
+      await customerController.updateCustomer(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith({
+        error: "Invalid email format.",
+      });
     });
 
-    it("should return a 404 if findById return empty", async () => {
-      const mockCustomerService = jest
-        .spyOn(CustomerService.prototype, "findById")
-        .mockResolvedValue(undefined);
-
-      const response = await request(app).get("/customers/12345678a");
-      expect(response.status).toBe(404);
-      expect(response.body.message).toContain("Customer not found");
-
-      mockCustomerService.mockRestore();
-    });
-
-    it("should return a 500 error when an unexpected error occurs", async () => {
-      const errorMessage = "Unexpected error";
-      const mockCustomerService = jest
-        .spyOn(CustomerService.prototype, "findById")
-        .mockImplementationOnce(() => {
-          throw new Error(errorMessage);
-        });
-
-      const response = await request(app).get("/customers/12345678a");
-      expect(response.status).toBe(500);
-      expect(response.body.error).toContain(
-        "An unknown error occurred while retrieving the customer:"
+    it("should return 409 if email is already in use", async () => {
+      const customerOne = new Customer(
+        "12345678a",
+        "Customer One",
+        "one@example.com",
+        100
       );
-
-      mockCustomerService.mockRestore();
-    });
-  });
-
-  describe("PUT /customers/:id", () => {
-    it("should update an existing customer", async () => {
-      const newCustomer = await request(app).post("/customers").send({
-        name: "John Smith",
-        email: "john.smith@example.com",
-        availableCredit: 1000,
-      });
-
-      const updateData = {
-        name: "John Smith Updated",
-        email: "john.smithUPDATED@example.com",
-        availableCredit: 1500,
-      };
-      const response = await request(app)
-        .put(`/customers/${newCustomer.body.id}`)
-        .send(updateData);
-      expect(response.status).toBe(200);
-      expect(response.body.name).toBe("John Smith Updated");
-    });
-
-    it("should return 400 if id is not a valid id", async () => {
-      const response = await request(app).put("/customers/invalid-id");
-
-      expect(response.status).toBe(400);
-      expect(response.body).toHaveProperty(
-        "error",
-        "Invalid type for property id: expected string containing exactly 9 alphanumeric characters, but received string."
+      const customerTwo = new Customer(
+        "23456789a",
+        "Customer Two",
+        "two@example.com",
+        200
       );
-    });
+      await customerRepository.create(customerOne);
+      await customerRepository.create(customerTwo);
 
-    it("should update one field of an existing customer", async () => {
-      // 1. Create a test client
-      const customerData = {
-        name: "Original Name",
-        email: "original@example.com",
-        availableCredit: 100,
-      };
+      const req = {
+        params: { id: "12345678a" },
+        body: {
+          name: "Updated Customer",
+          email: "two@example.com",
+          availableCredit: 150,
+        },
+      } as unknown as Request;
+      const res = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn(),
+      } as unknown as Response;
 
-      const createdCustomer = await request(app)
-        .post("/customers")
-        .send(customerData)
-        .expect(201);
+      await customerController.updateCustomer(req, res);
 
-      // 2. Update only the customer name
-      const updatedCustomerData = {
-        name: "Updated Name",
-      };
-
-      const response = await request(app)
-        .put(`/customers/${createdCustomer.body.id}`)
-        .send(updatedCustomerData)
-        .expect(200);
-
-      // 3. Verify that the response contains the updated client
-      expect(response.body).toMatchObject({
-        id: createdCustomer.body.id,
-        name: "Updated Name",
-        email: "original@example.com",
-        availableCredit: 100,
-      });
-
-      // 4. Check the database (optional, if you have access to the DB)
-      const updatedCustomerInDb = await customerRepository.findById(
-        createdCustomer.body.id
-      );
-      expect(updatedCustomerInDb).toMatchObject({
-        name: "Updated Name",
-        email: "original@example.com",
-        availableCredit: 100,
-      });
-    });
-
-    it("should return 404 if customer does not exist in service", async () => {
-      // Mock validateCustomerExists so it doesn't block execution
-      const mockValidateCustomerExists = jest
-        .spyOn(ValidationUtils, "validateCustomerExists")
-        .mockResolvedValueOnce();
-
-      // Mock findById to return undefined and enter the if (!customer)
-      const mockFindById = jest
-        .spyOn(CustomerService.prototype, "findById")
-        .mockResolvedValueOnce(undefined);
-
-      const updateData = { name: "John Smith Updated", availableCredit: 1500 };
-
-      const response = await request(app)
-        .put("/customers/12345678a")
-        .send(updateData);
-
-      expect(response.status).toBe(404);
-      expect(response.body).toEqual({
-        error: new CustomerNotFoundException().message,
-      });
-
-      // Restaurar los mocks para que no afecten a otros tests
-      mockValidateCustomerExists.mockRestore();
-      mockFindById.mockRestore();
-    });
-
-    it("should throw InvalidTypeException for email", async () => {
-      const customer = await request(app).post("/customers").send({
-        name: "Jane Doe",
-        email: "jane.doe@example.com",
-        availableCredit: 300,
-      });
-
-      const response = await request(app)
-        .put(`/customers/${customer.body.id}`)
-        .send({ email: 123 });
-      expect(response.status).toBe(400);
-    });
-
-    it("should throw InvalidEmailFormatException for invalid email format", async () => {
-      const customer = await request(app).post("/customers").send({
-        name: "Jane Doe",
-        email: "jane.doe@example.com",
-        availableCredit: 300,
-      });
-
-      const response = await request(app)
-        .put(`/customers/${customer.body.id}`)
-        .send({ email: "invalid-email" });
-      expect(response.status).toBe(400);
-    });
-
-    it("should throw EmailAlreadyInUseException if email is already used", async () => {
-      await request(app).post("/customers").send({
-        name: "John Doe",
-        email: "john.doe@example.com",
-        availableCredit: 500,
-      });
-      const customer = await request(app).post("/customers").send({
-        name: "Jane Doe",
-        email: "jane.doe@example.com",
-        availableCredit: 300,
-      });
-
-      const response = await request(app)
-        .put(`/customers/${customer.body.id}`)
-        .send({ email: "john.doe@example.com" });
-      expect(response.status).toBe(409);
-    });
-
-    it("should throw InvalidTypeException for name", async () => {
-      const customer = await request(app).post("/customers").send({
-        name: "Jane Doe",
-        email: "jane.doe@example.com",
-        availableCredit: 300,
-      });
-
-      const response = await request(app)
-        .put(`/customers/${customer.body.id}`)
-        .send({ name: 123 });
-      expect(response.status).toBe(400);
-    });
-
-    it("should throw EmptyNameException if name is empty", async () => {
-      const customer = await request(app).post("/customers").send({
-        name: "Jane Doe",
-        email: "jane.doe@example.com",
-        availableCredit: 300,
-      });
-
-      const response = await request(app)
-        .put(`/customers/${customer.body.id}`)
-        .send({ name: "" });
-      expect(response.status).toBe(400);
-    });
-
-    it("should throw NameTooShortException if name is too short", async () => {
-      const customer = await request(app).post("/customers").send({
-        name: "Jane Doe",
-        email: "jane.doe@example.com",
-        availableCredit: 300,
-      });
-
-      const response = await request(app)
-        .put(`/customers/${customer.body.id}`)
-        .send({ name: "Jo" });
-      expect(response.status).toBe(400);
-    });
-
-    it("should throw InvalidTypeException for availableCredit", async () => {
-      const customer = await request(app).post("/customers").send({
-        name: "Jane Doe",
-        email: "jane.doe@example.com",
-        availableCredit: 300,
-      });
-
-      const response = await request(app)
-        .put(`/customers/${customer.body.id}`)
-        .send({ availableCredit: "not-a-number" });
-      expect(response.status).toBe(400);
-    });
-
-    it("should return a 500 error when an unexpected error occurs", async () => {
-      const errorMessage = "Unexpected error";
-      const mockCustomerService = jest
-        .spyOn(CustomerService.prototype, "update")
-        .mockImplementationOnce(() => {
-          throw new Error(errorMessage);
-        });
-
-      const updateData = { name: "John Smith Updated", availableCredit: 1500 };
-      const response = await request(app)
-        .put("/customers/12345678a")
-        .send(updateData);
-      expect(response.status).toBe(500);
-      expect(response.body.error).toContain(
-        "An unknown error occurred when updating customer:"
-      );
-
-      mockCustomerService.mockRestore();
-    });
-  });
-
-  describe("DELETE /customers/:id", () => {
-    it("should delete a customer by id", async () => {
-      const newCustomer = await request(app).post("/customers").send({
-        name: "Customer To Delete",
-        email: "delete.me@example.com",
-        availableCredit: 200,
-      });
-
-      const response = await request(app).delete(
-        `/customers/${newCustomer.body.id}`
-      );
-      expect(response.status).toBe(204);
-    });
-
-    it("should return 400 if id is not a valid id", async () => {
-      const response = await request(app).delete("/customers/invalid-id");
-
-      expect(response.status).toBe(400);
-      expect(response.body).toHaveProperty(
-        "error",
-        "Invalid type for property id: expected string containing exactly 9 alphanumeric characters, but received string."
-      );
-    });
-
-    it("should return 404 if customer does not exist", async () => {
-      const response = await request(app).delete(`/customers/12345678a`);
-      expect(response.status).toBe(404);
-    });
-
-    it("should return 400 if trying to delete a non-existent customer", async () => {
-      const response = await request(app).delete("/customers/12345678a");
-      expect(response.status).toBe(404);
-    });
-
-    it("should return a 500 error when an unexpected error occurs", async () => {
-      const errorMessage = "Unexpected error";
-      const mockCustomerService = jest
-        .spyOn(CustomerService.prototype, "delete")
-        .mockImplementationOnce(() => {
-          throw new Error(errorMessage);
-        });
-
-      const response = await request(app).delete("/customers/12345678a");
-      expect(response.status).toBe(500);
-      expect(response.body.error).toContain(
-        "An unknown error occurred when deleting customer:"
-      );
-
-      mockCustomerService.mockRestore();
-    });
-  });
-
-  describe("POST /customers/credit", () => {
-    it("should throw InvalidTypeException for id", async () => {
-      const response = await request(app)
-        .post("/customers/credit")
-        .send({ id: 123, amount: 100 });
-      expect(response.status).toBe(400);
-    });
-
-    it("should throw InvalidTypeException for string id", async () => {
-      const response = await request(app)
-        .post("/customers/credit")
-        .send({ id: "invalid-id", amount: 100 });
-      expect(response.status).toBe(400);
-    });
-
-    it("should throw CustomerNotFoundException if customer does not exist", async () => {
-      const response = await request(app)
-        .post("/customers/credit")
-        .send({ id: "12345678a", amount: 100 });
-      expect(response.status).toBe(404);
-    });
-
-    it("should throw InvalidTypeException for amount", async () => {
-      const newCustomer = await request(app).post("/customers").send({
-        name: "Credit Test",
-        email: "credit.test@example.com",
-        availableCredit: 200,
-      });
-
-      const response = await request(app)
-        .post("/customers/credit")
-        .send({ id: newCustomer.body.id, amount: "not-a-number" });
-      expect(response.status).toBe(400);
-    });
-
-    it("should throw NegativeCreditAmountException if amount is negative", async () => {
-      const newCustomer = await request(app).post("/customers").send({
-        name: "Credit Test",
-        email: "credit.test@example.com",
-        availableCredit: 200,
-      });
-
-      const response = await request(app)
-        .post("/customers/credit")
-        .send({ id: newCustomer.body.id, amount: -50 });
-      expect(response.status).toBe(452);
-    });
-
-    it("should add credit to an existing customer", async () => {
-      // Arrange
-      const newCustomer = await request(app).post("/customers").send({
-        name: "Credit Test",
-        email: "credit.test@example.com",
-        availableCredit: 200,
-      });
-
-      const creditAmount = 150;
-
-      // Act
-      const response = await request(app)
-        .post("/customers/credit")
-        .send({ id: newCustomer.body.id, amount: creditAmount });
-
-      // Assert
-      expect(response.status).toBe(200);
-      expect(response.body).toMatchObject({
-        id: newCustomer.body.id,
-        name: "Credit Test",
-        email: "credit.test@example.com",
-        availableCredit: 350,
+      expect(res.status).toHaveBeenCalledWith(409);
+      expect(res.json).toHaveBeenCalledWith({
+        error: "Email is already in use.",
       });
     });
 
     it("should return a 500 error when an unexpected error occurs", async () => {
-      const errorMessage = "Unexpected error";
-      const mockCustomerService = jest
-        .spyOn(CustomerService.prototype, "addCredit")
-        .mockImplementationOnce(() => {
-          throw new Error(errorMessage);
-        });
-
-      const response = await request(app)
-        .post("/customers/credit")
-        .send({ id: 123, amount: 100 });
-      expect(response.status).toBe(500);
-      expect(response.body.error).toContain(
-        "An unknown error occurred when adding credit:"
+      const customer = new Customer(
+        "12345678a",
+        "Customer One",
+        "one@example.com",
+        100
       );
+      await customerRepository.create(customer);
 
-      mockCustomerService.mockRestore();
-    });
+      const req = {
+        params: { id: "12345678a" },
+        body: { name: "Updated Customer", availableCredit: 150 },
+      } as unknown as Request;
+      const res = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn(),
+      } as unknown as Response;
 
-    it("should throw CustomerNotFoundException if customer does not exist", async () => {
-      // Mock validateCustomerExists so it doesn't block execution
-      const mockValidateCustomerExists = jest
-        .spyOn(ValidationUtils, "validateCustomerExists")
-        .mockResolvedValueOnce();
-
-      // Mock findById to return undefined and enter the if (!customer)
-      const mockFindById = jest
-        .spyOn(CustomerService.prototype, "findById")
-        .mockResolvedValueOnce(undefined);
-
-      const response = await request(app)
-        .post("/customers/credit")
-        .send({ id: "12345678a", amount: 100 });
-
-      expect(response.status).toBe(404);
-      expect(response.body).toEqual({
-        error: new CustomerNotFoundException().message,
+      // Simulate an unexpected error in the repository
+      const originalUpdateMethod =
+        customerRepository.update.bind(customerRepository);
+      customerRepository.update = jest.fn().mockImplementationOnce(() => {
+        throw new Error("Unexpected error");
       });
 
-      // Restore mocks so they don't affect other tests
-      mockValidateCustomerExists.mockRestore();
-      mockFindById.mockRestore();
+      await customerController.updateCustomer(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.json).toHaveBeenCalledWith({
+        error:
+          "An unknown error occurred when updating customer: Unexpected error",
+      });
+
+      // Restore the original method after testing
+      customerRepository.update = originalUpdateMethod;
     });
   });
 
-  describe("GET /customers/sortByCredit", () => {
-    it("should return customers sorted by available credit", async () => {
-      const customers = [
-        new Customer("1", "Alice", "alice@example.com", 100),
-        new Customer("2", "Bob", "bob@example.com", 200),
-        new Customer("3", "Charlie", "charlie@example.com", 50),
-      ];
-
-      // Add clients to the repository
-      for (const customer of customers) {
-        await customerRepository.create(customer);
-      }
-
-      // Make the GET request with the default order (descending)
-      const responseDesc = await request(app).get("/customers/sortByCredit");
-
-      expect(responseDesc.status).toBe(200);
-      // Verify that customers are sorted correctly by available credit (descending)
-      expect(responseDesc.body).toEqual([
-        {
-          id: "2",
-          name: "Bob",
-          email: "bob@example.com",
-          availableCredit: 200,
-        },
-        {
-          id: "1",
-          name: "Alice",
-          email: "alice@example.com",
-          availableCredit: 100,
-        },
-        {
-          id: "3",
-          name: "Charlie",
-          email: "charlie@example.com",
-          availableCredit: 50,
-        },
-      ]);
-
-      // Make the GET request with the ascending order parameter
-      const responseAsc = await request(app).get(
-        "/customers/sortByCredit?order=asc"
+  describe("CustomerController - Delete Customer", () => {
+    it("should return 204 when customer is successfully deleted", async () => {
+      const customer = await customerRepository.create(
+        new Customer(
+          "12345678a",
+          "Customer to Delete",
+          "delete@example.com",
+          150
+        )
       );
 
-      expect(responseAsc.status).toBe(200);
-      // Check that customers are sorted correctly by available credit (ascending)
-      expect(responseAsc.body).toEqual([
-        {
-          id: "3",
-          name: "Charlie",
-          email: "charlie@example.com",
-          availableCredit: 50,
-        },
-        {
-          id: "1",
-          name: "Alice",
-          email: "alice@example.com",
-          availableCredit: 100,
-        },
-        {
-          id: "2",
-          name: "Bob",
-          email: "bob@example.com",
-          availableCredit: 200,
-        },
+      const req = { params: { id: customer.getId() } } as unknown as Request;
+      const res = {
+        status: jest.fn().mockReturnThis(),
+        send: jest.fn(),
+      } as unknown as Response;
+
+      await customerController.deleteCustomer(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(204);
+      expect(res.send).toHaveBeenCalled();
+
+      // Verify that the client was removed from the in-memory repository
+      const customerInRepo = await customerRepository.findById(
+        customer.getId()
+      );
+      expect(customerInRepo).toBeUndefined();
+    });
+
+    it("should return 400 if id is not a string", async () => {
+      const req = { params: { id: 12345 } } as unknown as Request;
+      const res = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn(),
+      } as unknown as Response;
+
+      await customerController.deleteCustomer(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith({
+        error:
+          "Invalid type for property id: expected string, but received number.",
+      });
+    });
+
+    it("should return 400 if id is invalid", async () => {
+      const req = { params: { id: "invalid-id" } } as unknown as Request;
+      const res = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn(),
+      } as unknown as Response;
+
+      await customerController.deleteCustomer(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith({
+        error:
+          "Invalid type for property id: expected string containing exactly 9 alphanumeric characters, but received string.",
+      });
+    });
+
+    it("should return 404 when deleting a non-existing customer", async () => {
+      const req = { params: { id: "12345678a" } } as unknown as Request;
+      const res = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn(),
+      } as unknown as Response;
+
+      await customerController.deleteCustomer(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(404);
+      expect(res.json).toHaveBeenCalledWith({
+        error: "Customer not found.",
+      });
+    });
+
+    it("should return a 500 error when an unexpected error occurs", async () => {
+      const customer = new Customer(
+        "12345678a",
+        "Customer One",
+        "one@example.com",
+        100
+      );
+      await customerRepository.create(customer);
+
+      const req = {
+        params: { id: "12345678a" },
+      } as unknown as Request;
+
+      const res = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn(),
+      } as unknown as Response;
+
+      // Simula un error inesperado en el método delete del repositorio
+      const originalDeleteMethod =
+        customerRepository.delete.bind(customerRepository);
+      customerRepository.delete = jest.fn().mockImplementationOnce(() => {
+        throw new Error("Unexpected error");
+      });
+
+      await customerController.deleteCustomer(req, res);
+
+      // Asegura que el controlador respondió con un 500 y el mensaje de error adecuado
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.json).toHaveBeenCalledWith({
+        error:
+          "An unknown error occurred when deleting customer: Unexpected error",
+      });
+
+      // Restaura el método original después de la prueba
+      customerRepository.delete = originalDeleteMethod;
+    });
+  });
+
+  describe("CustomerController - Add credit", () => {
+    it("should add credit to a customer", async () => {
+      const customer = new Customer(
+        "12345678a",
+        "Customer One",
+        "one@example.com",
+        100
+      );
+      await customerRepository.create(customer);
+
+      const req = {
+        body: { id: "12345678a", amount: 50 },
+      } as unknown as Request;
+
+      const res = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn(),
+      } as unknown as Response;
+
+      await customerController.addCredit(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: "12345678a",
+          name: "Customer One",
+          email: "one@example.com",
+          availableCredit: 150,
+        })
+      );
+    });
+
+    it("should return 404 when adding credit to a non-existing customer", async () => {
+      const req = {
+        body: { id: "12345678a", amount: 50 },
+      } as unknown as Request;
+      const res = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn(),
+      } as unknown as Response;
+
+      await customerController.addCredit(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(404);
+      expect(res.json).toHaveBeenCalledWith({
+        error: "Customer not found.",
+      });
+    });
+
+    it("should return 400 when adding credit to a customer with invalid id", async () => {
+      const req = {
+        body: { id: 123, amount: 50 },
+      } as unknown as Request;
+      const res = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn(),
+      } as unknown as Response;
+
+      await customerController.addCredit(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith({
+        error:
+          "Invalid type for property id: expected string, but received number.",
+      });
+    });
+
+    it("should return 452 when adding negative credit", async () => {
+      const customer = new Customer(
+        "12345678a",
+        "Customer One",
+        "one@example.com",
+        100
+      );
+      await customerRepository.create(customer);
+
+      const req = {
+        body: { id: "12345678a", amount: -50 },
+      } as unknown as Request;
+
+      const res = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn(),
+      } as unknown as Response;
+
+      await customerController.addCredit(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(452);
+      expect(res.json).toHaveBeenCalledWith({
+        error: "Credit amount cannot be negative.",
+      });
+    });
+
+    it("should return 400 when adding invalid credit", async () => {
+      const customer = new Customer(
+        "12345678a",
+        "Customer One",
+        "one@example.com",
+        100
+      );
+      await customerRepository.create(customer);
+
+      const req = {
+        body: { id: "12345678a", amount: "fifty" }, // Here you are passing a string instead of a number
+      } as unknown as Request;
+
+      const res = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn(),
+      } as unknown as Response;
+
+      await customerController.addCredit(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith({
+        error:
+          "Invalid type for property amount: expected number, but received string.",
+      });
+    });
+
+    it("should return a 500 error when an unexpected error occurs", async () => {
+      const customer = new Customer(
+        "12345678a",
+        "Customer One",
+        "one@example.com",
+        100
+      );
+      await customerRepository.create(customer);
+
+      const req = {
+        body: { id: "12345678a", amount: 50 },
+      } as unknown as Request;
+      const res = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn(),
+      } as unknown as Response;
+
+      // Simulate an unexpected error in the service
+      const originalAddCreditMethod =
+        customerService.addCredit.bind(customerService);
+      customerService.addCredit = jest.fn().mockImplementationOnce(() => {
+        throw new Error("Unexpected error");
+      });
+
+      await customerController.addCredit(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.json).toHaveBeenCalledWith({
+        error: "An unknown error occurred when adding credit: Unexpected error",
+      });
+
+      // Restore the original method after testing
+      customerService.addCredit = originalAddCreditMethod;
+    });
+  });
+
+  describe("CustomerController - sortCustomersByCredit", () => {
+    it("should return 200 and a sorted list of customers by credit in descending order", async () => {
+      const customer1 = new Customer("1", "Alice", "alice@example.com", 200);
+      const customer2 = new Customer("2", "Bob", "bob@example.com", 150);
+      const customer3 = new Customer(
+        "3",
+        "Charlie",
+        "charlie@example.com",
+        300
+      );
+
+      await customerRepository.create(customer1);
+      await customerRepository.create(customer2);
+      await customerRepository.create(customer3);
+
+      const req = {
+        query: { order: "desc" }, // Aquí se especifica el orden
+      } as unknown as Request;
+
+      const res = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn(),
+      } as unknown as Response;
+
+      await customerController.sortCustomersByCredit(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith([
+        expect.objectContaining({ id: "3", availableCredit: 300 }),
+        expect.objectContaining({ id: "1", availableCredit: 200 }),
+        expect.objectContaining({ id: "2", availableCredit: 150 }),
       ]);
     });
 
-    it("should return 400 for invalid sort order", async () => {
-      const response = await request(app).get(
-        "/customers/sortByCredit?order=invalid"
+    it("should return 200 and a sorted list of customers with default order 'desc' when no order is provided", async () => {
+      const customer1 = new Customer("1", "Alice", "alice@example.com", 200);
+      const customer2 = new Customer("2", "Bob", "bob@example.com", 150);
+      const customer3 = new Customer(
+        "3",
+        "Charlie",
+        "charlie@example.com",
+        300
       );
 
-      expect(response.status).toBe(400);
-      expect(response.body).toEqual({
+      await customerRepository.create(customer1);
+      await customerRepository.create(customer2);
+      await customerRepository.create(customer3);
+
+      const req = {
+        query: {}, // Sin especificar el orden
+      } as unknown as Request;
+
+      const res = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn(),
+      } as unknown as Response;
+
+      await customerController.sortCustomersByCredit(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith([
+        expect.objectContaining({ id: "3", availableCredit: 300 }),
+        expect.objectContaining({ id: "1", availableCredit: 200 }),
+        expect.objectContaining({ id: "2", availableCredit: 150 }),
+      ]);
+    });
+
+    it("should return 200 and a sorted list of customers when order is 'desc'", async () => {
+      const customer1 = new Customer("1", "Alice", "alice@example.com", 200);
+      const customer2 = new Customer("2", "Bob", "bob@example.com", 150);
+      const customer3 = new Customer(
+        "3",
+        "Charlie",
+        "charlie@example.com",
+        300
+      );
+
+      await customerRepository.create(customer1);
+      await customerRepository.create(customer2);
+      await customerRepository.create(customer3);
+
+      const req = {
+        query: { order: "desc" },
+      } as unknown as Request;
+
+      const res = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn(),
+      } as unknown as Response;
+
+      await customerController.sortCustomersByCredit(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith([
+        expect.objectContaining({ id: "3", availableCredit: 300 }),
+        expect.objectContaining({ id: "1", availableCredit: 200 }),
+        expect.objectContaining({ id: "2", availableCredit: 150 }),
+      ]);
+    });
+
+    it("should return 400 if an invalid order is provided", async () => {
+      const req = {
+        query: { order: "invalid" },
+      } as unknown as Request;
+
+      const res = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn(),
+      } as unknown as Response;
+
+      await customerController.sortCustomersByCredit(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith({
         error: "Invalid sort order. Use 'asc' or 'desc'.",
       });
     });
 
-    it("should return customers sorted by available credit in ascending order when specified", async () => {
-      const customer1 = new Customer("1", "Alice", "alice@example.com", 150);
-      const customer2 = new Customer("2", "Bob", "bob@example.com", 100);
-      await customerRepository.create(customer1);
-      await customerRepository.create(customer2);
-
-      const response = await request(app).get(
-        "/customers/sortByCredit?order=asc"
-      );
-
-      expect(response.status).toBe(200);
-      expect(response.body).toEqual([
-        {
-          id: "2",
-          name: "Bob",
-          email: "bob@example.com",
-          availableCredit: 100,
-        },
-        {
-          id: "1",
-          name: "Alice",
-          email: "alice@example.com",
-          availableCredit: 150,
-        },
-      ]);
-    });
-
-    it("should return an empty list when no customers exist", async () => {
-      await customerRepository.clear();
-
-      const response = await request(app).get("/customers/sortByCredit");
-
-      expect(response.status).toBe(200);
-      expect(response.body).toEqual([]);
-    });
-
     it("should return a 500 error when an unexpected error occurs", async () => {
-      const errorMessage = "Unexpected error";
-      const mockCustomerService = jest
-        .spyOn(CustomerService.prototype, "sortCustomersByCredit")
+      const req = {
+        query: { order: "desc" },
+      } as unknown as Request;
+
+      const res = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn(),
+      } as unknown as Response;
+
+      // Simulate an unexpected error in the service
+      const originalSortCustomersByCreditMethod =
+        customerService.sortCustomersByCredit.bind(customerService);
+      customerService.sortCustomersByCredit = jest
+        .fn()
         .mockImplementationOnce(() => {
-          throw new Error(errorMessage);
+          throw new Error("Unexpected error");
         });
 
-      const response = await request(app).get("/customers/sortByCredit");
-      expect(response.status).toBe(500);
-      expect(response.body.error).toContain(
-        "An unknown error occurred while sorting customers by credit:"
-      );
+      await customerController.sortCustomersByCredit(req, res);
 
-      mockCustomerService.mockRestore();
-    });
-  });
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.json).toHaveBeenCalledWith({
+        error:
+          "An unknown error occurred while sorting customers by credit: Unexpected error",
+      });
 
-  describe("Error Handling", () => {
-    it.skip("should return a 500 error for unexpected error", async () => {
+      // Restore the original method after testing
+      customerService.sortCustomersByCredit =
+        originalSortCustomersByCreditMethod;
     });
   });
 });

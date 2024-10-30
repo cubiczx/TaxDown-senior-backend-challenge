@@ -78,21 +78,42 @@ The following coverage results represent the all test suites:
 
 | Test Type            | Statements | Branches | Functions | Lines |
 |----------------------|------------|----------|-----------|-------|
-| **Integration Tests** | 84.84%  | 95.71%   | 80.55%    | 86.75%|
+| **Integration Tests** | 98.24%  | 95.71%   | 96.66%    | 98.23%|
 
-The following coverage results represent the integration test suite (`src/tests/integration/interfaces/controllers/CustomerController.test.ts`):
+The following coverage results represent the integration test suite (`src/tests/integration/infrastructure/Server.test.ts`)
 
 | Test Type            | Statements | Branches | Functions | Lines |
 |----------------------|------------|----------|-----------|-------|
 | **Unit Tests** | 100%    | 100%   | 100%    | 100%|
 | **Integration Tests** | 60.09%  | 73.61%   | 59.25%    | 61.28%|
 
-The following coverage results represent the integration test suite (`src/tests/integration/interfaces/controllers/CustomerControllerLambda.test.ts`):
+The following coverage results represent the integration test suite (`src/tests/integration/infrastructure/ServerServerless.test.ts`): TODO
+
+| Test Type            | Statements | Branches | Functions | Lines |
+|----------------------|------------|----------|-----------|-------|
+| **Unit Tests** | TODO%    | TODO%   | TODO%    | TODO%|
+| **Integration Tests** | TODO%  | TODO%   | TODO%    | TODO%|
+
+The following coverage results represent the integration test suite (`src/tests/integration/interfaces/controllers/CustomerController.test.ts`): TODO improve Integration Tests
+
+| Test Type            | Statements | Branches | Functions | Lines |
+|----------------------|------------|----------|-----------|-------|
+| **Unit Tests** | 100%    | 100%   | 100%    | 100%|
+| **Integration Tests** | 51.51%  | 68.57%   | 52.77%    | 52.46%|
+
+The following coverage results represent the integration test suite (`src/tests/integration/interfaces/controllers/CustomerControllerLambda.test.ts`): TODO improve Integration Tests
 
 | Test Type            | Statements | Branches | Functions | Lines |
 |----------------------|------------|----------|-----------|-------|
 | **Unit Tests** | 100%    | 88.88%   | 100%    | 100%|
 | **Integration Tests** | 45%  | 50.74%   | 49.54%    | 45.75%|
+
+The following coverage results represent the integration test suite (`src/tests/unit/interfaces/controllers/CustomerController.test.ts`):
+
+| Test Type            | Statements | Branches | Functions | Lines |
+|----------------------|------------|----------|-----------|-------|
+| **Unit Tests** | 100%    | 100%   | 100%    | 100%|
+| **Integration Tests** | 32.07%  | 31.42%   | 25%    | 32.98%|
 
 The following coverage results represent the integration test suite (`src/tests/unit/application/CustomerService.test.ts`):
 

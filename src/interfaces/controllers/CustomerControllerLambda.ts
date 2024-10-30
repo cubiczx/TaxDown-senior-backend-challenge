@@ -1,4 +1,3 @@
-import { Request, Response } from "express";
 import { CustomerService } from "../../application/CustomerService";
 import { isCustomError } from "../CustomError";
 import { APIGatewayProxyResult } from "aws-lambda";
@@ -245,7 +244,7 @@ export class CustomerControllerLambda {
       if (!customer) {
         return {
           statusCode: 404,
-          body: JSON.stringify({ message: "Customer not found." }),
+          body: JSON.stringify({ error: "Customer not found." }),
         };
       }
 

@@ -360,7 +360,7 @@ describe("CustomerControllerLambda", () => {
       jest.restoreAllMocks();
     });
 
-    it("should return a 404 error when a customer is not found", async () => {
+    it("should return a 404 error when a customer is not found by findby", async () => {
       // Mock `findById` to return a `Promise` that resolves to `undefined`
       jest.spyOn(customerService, "findById").mockResolvedValue(undefined);
 
@@ -393,7 +393,7 @@ describe("CustomerControllerLambda", () => {
 
       expect(result.statusCode).toBe(404);
       const response = JSON.parse(result.body);
-      expect(response.message).toBe("Customer not found.");
+      expect(response.error).toBe("Customer not found.");
 
       // Restore the original behavior of `findById` after the test
       jest.restoreAllMocks();
@@ -936,7 +936,7 @@ describe("CustomerControllerLambda", () => {
       expect(response.error).toBe("Customer not found.");
     });
 
-    it("should return 404 when adding credit to a customer with invalid id", async () => {
+    it("should return 400 when adding credit to a customer with invalid id", async () => {
       const event: APIGatewayProxyEvent = {
         body: JSON.stringify({
           id: "invalid-id",
@@ -1140,21 +1140,22 @@ describe("CustomerControllerLambda", () => {
       );
     });
 
-    it("should return 409 if order is invalid in should list all customers", async () => {
-        jest.restoreAllMocks();
-      
-        const event: APIGatewayProxyEvent = {
-          pathParameters: {},
-          queryStringParameters: { order: "invalid-order" },
-          body: null,
-        } as any;
-      
-        const result: APIGatewayProxyResult = await customerController.sortCustomersByCreditLambda(event);
-      
-        expect(result.statusCode).toBe(400);
-        const response = JSON.parse(result.body);
-        expect(response.error).toBe("Invalid sort order. Use 'asc' or 'desc'.");
-      });      
+    it("should return 400 if order is invalid in should list all customers", async () => {
+      jest.restoreAllMocks();
+
+      const event: APIGatewayProxyEvent = {
+        pathParameters: {},
+        queryStringParameters: { order: "invalid-order" },
+        body: null,
+      } as any;
+
+      const result: APIGatewayProxyResult =
+        await customerController.sortCustomersByCreditLambda(event);
+
+      expect(result.statusCode).toBe(400);
+      const response = JSON.parse(result.body);
+      expect(response.error).toBe("Invalid sort order. Use 'asc' or 'desc'.");
+    });
 
     it("should return a 500 error when an unexpected error occurs", async () => {
       jest

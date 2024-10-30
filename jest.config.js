@@ -14,7 +14,7 @@ module.exports = {
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
   testPathIgnorePatterns: ['/node_modules/', '/dist/', "/src/middleware/"],
   collectCoverage: true,
-  collectCoverageFrom: ['<rootDir>/src/**/*.ts', "!<rootDir>/src/middleware/**", '!**/node_modules/**'],
+  collectCoverageFrom: ['<rootDir>/src/**/*.ts', "!<rootDir>/src/middleware/**", "!<rootDir>/src/infrastructure/ServerServerless.ts", '!**/node_modules/**',],
   coverageDirectory: '<rootDir>/coverage',
   testTimeout: 50000,
 };

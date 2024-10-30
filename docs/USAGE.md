@@ -75,6 +75,10 @@ serverless offline
 
 ## Running Tests
 
+To execute all tests, make sure the following services are running:
+
+- **MongoDB**: Ensure your MongoDB server is running.
+
 To execute all tests, run:
 
 ```bash

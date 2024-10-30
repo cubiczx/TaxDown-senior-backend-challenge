@@ -122,7 +122,7 @@ export class CustomerController {
       } else {
         //console.error(errorMessage, (error as Error).message);
         res.status(500).json({
-          error: errorMessage + (error as Error).message,
+          error: errorMessage + ' ' + (error as Error).message,
         });
       }
     }
@@ -181,7 +181,7 @@ export class CustomerController {
       } else {
         //console.error(errorMessage, (error as Error).message);
         res.status(500).json({
-          error: errorMessage + (error as Error).message,
+          error: errorMessage + ' ' + (error as Error).message,
         });
       }
     }
@@ -251,7 +251,7 @@ export class CustomerController {
     try {
       const customer = await this.customerService.findById(id);
       if (!customer) {
-        res.status(404).json({ message: "Customer not found" });
+        res.status(404).json({ error: "Customer not found." });
         return;
       }
       res.status(200).json(customer);
@@ -266,7 +266,7 @@ export class CustomerController {
       } else {
         //console.error(errorMessage, (error as Error).message);
         res.status(500).json({
-          error: errorMessage + (error as Error).message,
+          error: errorMessage + ' ' + (error as Error).message,
         });
       }
     }
@@ -401,7 +401,7 @@ export class CustomerController {
       } else {
         //console.error(errorMessage, (error as Error).message);
         res.status(500).json({
-          error: errorMessage + (error as Error).message,
+          error: errorMessage + ' ' + (error as Error).message,
         });
       }
     }
@@ -476,7 +476,7 @@ export class CustomerController {
       } else {
         //console.error(errorMessage, (error as Error).message);
         res.status(500).json({
-          error: errorMessage + (error as Error).message,
+          error: errorMessage + ' ' + (error as Error).message,
         });
       }
     }
@@ -585,7 +585,7 @@ export class CustomerController {
       } else {
         //console.error(errorMessage, (error as Error).message);
         res.status(500).json({
-          error: errorMessage + (error as Error).message,
+          error: errorMessage + ' ' + (error as Error).message,
         });
       }
     }
@@ -668,7 +668,7 @@ export class CustomerController {
       } else {
         //console.error(errorMessage, (error as Error).message);
         res.status(500).json({
-          error: errorMessage + (error as Error).message,
+          error: errorMessage + ' ' + (error as Error).message,
         });
       }
     }
