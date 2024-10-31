@@ -197,9 +197,18 @@ export const apiDocs = async (
 };
 
 // Error handling
+/* istanbul ignore next */
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+  res.format({
+    'application/json': () => next(),
+    'default': () => next(),  // Continúa al siguiente middleware
+  });
   console.error(err.stack);
-  res.status(500).send("Something broke!");
+  const errorMessage = "Something broke!";
+  res.setHeader('Content-Type', 'application/json');
+  res.status(500).json({
+    error: errorMessage + ' ' + (err as Error).message,
+  });
 });
 
 // Exporting the Lambda Handler

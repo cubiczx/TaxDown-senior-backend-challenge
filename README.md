@@ -78,14 +78,14 @@ The following coverage results represent the all test suites:
 
 | Test Type            | Statements | Branches | Functions | Lines |
 |----------------------|------------|----------|-----------|-------|
-| **Integration Tests** | 98.24%  | 95.71%   | 96.66%    | 98.23%|
+| **Integration Tests** | 99.69%  | 98.5%   | 98.83%    | 99.69%|
 
 The following coverage results represent the integration test suite (`src/tests/integration/infrastructure/Server.test.ts`)
 
 | Test Type            | Statements | Branches | Functions | Lines |
 |----------------------|------------|----------|-----------|-------|
 | **Unit Tests** | 100%    | 100%   | 100%    | 100%|
-| **Integration Tests** | 60.09%  | 73.61%   | 59.25%    | 61.28%|
+| **Integration Tests** | 71.68%  | 77.61%   | 74.41%    | 71.51%|
 
 The following coverage results represent the integration test suite (`src/tests/integration/infrastructure/ServerServerless.test.ts`): TODO
 

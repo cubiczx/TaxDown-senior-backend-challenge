@@ -6,6 +6,9 @@ import { CustomerNotFoundException } from "../../../exceptions/CustomerNotFoundE
 import { CustomerService } from "../../../application/CustomerService";
 import { ValidationUtils } from "../../../utils/ValidationUtils";
 
+//jest.mock("../../../application/CustomerService");
+//jest.mock("../../../utils/ValidationUtils");
+
 describe("CustomerController Integration Tests", () => {
   let customerRepository: InMemoryCustomerRepository;
 
@@ -15,6 +18,7 @@ describe("CustomerController Integration Tests", () => {
 
   beforeEach(async () => {
     await customerRepository.clear(); // Clean repository before each test
+    //jest.clearAllMocks();
   });
 
   describe("POST /customers", () => {
@@ -253,6 +257,35 @@ describe("CustomerController Integration Tests", () => {
   });
 
   describe("PUT /customers/:id", () => {
+    it.skip("should throw CustomerNotFoundException if customer does not exist in repository during update", async () => {
+      // Crear un cliente para que el repositorio no esté vacío
+      const customerData = {
+        name: "Test Customer",
+        email: "test.customer@example.com",
+        availableCredit: 500,
+      };
+    
+      await request(app).post("/customers").send(customerData).expect(201);
+    
+      // Ahora intenta actualizar un cliente con un ID que no existe
+      const updateData = { name: "Updated Name", availableCredit: 1000 };
+    
+      // Mockear el método findById para que devuelva undefined
+      jest.spyOn(CustomerService.prototype, "findById").mockResolvedValueOnce(undefined);
+    
+      const response = await request(app)
+        .put("/customers/123456789") // ID que no existe
+        .send(updateData);
+    
+      expect(response.status).toBe(404); // Espera un 404
+      expect(response.body).toEqual({
+        error: new CustomerNotFoundException().message,
+      });
+    
+      // Restaurar el mock
+      jest.restoreAllMocks();
+    });
+
     it("should update an existing customer", async () => {
       const newCustomer = await request(app).post("/customers").send({
         name: "John Smith",
@@ -717,6 +750,24 @@ describe("CustomerController Integration Tests", () => {
       });
     });
 
+    it.skip("should return 400 for invalid sort order Mocked", async () => {
+      // Mock the sortCustomersByCredit method so that it passes undefined to validateSortOrder
+      (
+        CustomerService.prototype.sortCustomersByCredit as jest.Mock
+      ).mockImplementation(async (order: string = undefined as any) => {
+        // Here validateSortOrder is called with undefined
+        return ValidationUtils.validateSortOrder(order);
+      });
+
+      const response = await request(app).get(
+        "/customers/sortByCredit?order=invalid"
+      );
+
+      expect(response.status).toBe(400);
+      expect(response.body).toHaveProperty("error");
+      expect(response.body.error).toContain("Invalid sort order");
+    });
+
     it("should return customers sorted by available credit in ascending order when specified", async () => {
       const customer1 = new Customer("1", "Alice", "alice@example.com", 150);
       const customer2 = new Customer("2", "Bob", "bob@example.com", 100);
@@ -772,7 +823,24 @@ describe("CustomerController Integration Tests", () => {
   });
 
   describe("Error Handling", () => {
-    it.skip("should return a 500 error for unexpected error", async () => {
+    it.skip("should handle unexpected errors and return a 500 status", async () => {
+      // Establece el entorno en "test"
+      app.set("env", "test");
+
+      // Ruta de prueba que lanza un error
+      app.get("/error-test", (req, res, next) => {
+        try {
+          throw new Error("Test error");
+        } catch (err) {
+          next(err); // Pasa el error al middleware de manejo
+        }
+      });
+
+      const response = await request(app).get("/error-test");
+
+      expect(response.status).toBe(500);
+      expect(response.body).toHaveProperty("error");
+      expect(response.body.error).toContain("Something broke! Test error");
     });
   });
 });

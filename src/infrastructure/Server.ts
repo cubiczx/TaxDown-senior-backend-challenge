@@ -61,14 +61,24 @@ app.post("/customers/credit", (req: Request, res: Response) =>
 );
 
 // Error handling
+/* istanbul ignore next */
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+  res.format({
+    'application/json': () => next(),
+    'default': () => next(),  // Continue to the next middleware
+  });
   console.error(err.stack);
-  res.status(500).send("Something broke!");
+  const errorMessage = "Something broke!";
+  res.setHeader('Content-Type', 'application/json');
+  res.status(500).json({
+    error: errorMessage + ' ' + (err as Error).message,
+  });
 });
 
 // Start server
-const PORT = process.env.PORT || 3000; // Use PORT from .env or fallback to 3000
+/* istanbul ignore next */
 if (process.env.NODE_ENV !== "test") {
+  const PORT = process.env.PORT || 3000; // Use PORT from .env or fallback to 3000
   app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
     console.log(

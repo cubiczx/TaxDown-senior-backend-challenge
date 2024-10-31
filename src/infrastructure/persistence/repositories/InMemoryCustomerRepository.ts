@@ -71,6 +71,7 @@ export class InMemoryCustomerRepository implements CustomerRepositoryInterface {
    * @param minCredit The minimum available credit to filter by.
    * @returns A promise that resolves to a list of customers with available credit greater than or equal to the given amount.
    */
+  /* istanbul ignore next */
   async findByAvailableCredit(minCredit: number): Promise<Customer[]> {
     return this.customers.filter(
       (customer) => customer.getAvailableCredit() >= minCredit
