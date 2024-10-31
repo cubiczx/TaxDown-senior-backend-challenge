@@ -4,6 +4,7 @@ import { CustomerService } from "../../../../application/CustomerService";
 import { InMemoryCustomerRepository } from "../../../../infrastructure/persistence/repositories/InMemoryCustomerRepository";
 import { Customer } from "../../../../domain/Customer";
 import { CustomerNotFoundException } from "../../../../exceptions/CustomerNotFoundException";
+import { ValidationUtils } from "../../../../utils/ValidationUtils";
 
 describe("CustomerController Integration Tests with InMemoryCustomerRepository", () => {
   let customerController: CustomerController;
@@ -44,6 +45,38 @@ describe("CustomerController Integration Tests with InMemoryCustomerRepository",
           name: "Customer Four",
           email: "four@example.com",
           availableCredit: 400,
+        })
+      );
+
+      // Verify that the client was saved to the in-memory repository
+      const customerInRepo = await customerRepository.findByEmail(
+        "four@example.com"
+      );
+      expect(customerInRepo).toBeDefined();
+      expect(customerInRepo?.getName()).toBe("Customer Four");
+    });
+
+    it("should return 201 and the created customer without availableCredit", async () => {
+      const req = {
+        body: {
+          name: "Customer Four",
+          email: "four@example.com"
+        },
+      } as Request;
+
+      const res = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn(),
+      } as unknown as Response;
+
+      await customerController.createCustomer(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(201);
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          name: "Customer Four",
+          email: "four@example.com",
+          availableCredit: 0,
         })
       );
 
@@ -482,7 +515,7 @@ describe("CustomerController Integration Tests with InMemoryCustomerRepository",
         params: { id: "12345678a" },
         body: {
           name: "Updated Customer",
-          email: "one@example.com",
+          email: "oneUpdated@example.com",
           availableCredit: 150,
         },
       } as unknown as Request;
@@ -499,7 +532,7 @@ describe("CustomerController Integration Tests with InMemoryCustomerRepository",
         expect.objectContaining({
           id: "12345678a",
           name: "Updated Customer",
-          email: "one@example.com",
+          email: "oneUpdated@example.com",
           availableCredit: 150,
         })
       );
@@ -527,6 +560,92 @@ describe("CustomerController Integration Tests with InMemoryCustomerRepository",
         error: "Customer not found.",
       });
     });
+
+    it("should return 404 when updating a non-existing customer in findBy", async () => {
+      const req = {
+        params: { id: "12345678a" },
+        body: { name: "Updated Customer", availableCredit: 150 },
+      } as unknown as Request;
+
+      const res = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn(),
+      } as unknown as Response;
+
+      // Simulates that findById returns undefined
+      const originalFindByIdMethod =
+        customerRepository.findById.bind(customerRepository);
+      customerRepository.findById = jest
+        .fn()
+        .mockReturnValueOnce(Promise.resolve(undefined));
+
+      // Mock validateCustomerExists so that it doesn't throw an exception
+      const originalValidateCustomerExists =
+        ValidationUtils.validateCustomerExists;
+      ValidationUtils.validateCustomerExists = jest
+        .fn()
+        .mockResolvedValue(undefined);
+
+      await customerController.updateCustomer(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(404);
+      expect(res.json).toHaveBeenCalledWith({
+        error: "Customer not found.",
+      });
+
+      // Restore the original method after testing
+      customerRepository.findById = originalFindByIdMethod;
+      ValidationUtils.validateCustomerExists = originalValidateCustomerExists;
+    });
+
+    it("should throw CustomerNotFoundException when updating a customer that does not exist in the repository", async () => {
+      // Create a valid customer to mock the update call
+      const customer = new Customer(
+        "12345678a", // This ID will not exist in the in-memory repository
+        "Valid Customer",
+        "valid@example.com",
+        100
+      );
+    
+      // Mock validateCustomerExists to simulate that the customer exists
+      const originalValidateCustomerExists = ValidationUtils.validateCustomerExists;
+      ValidationUtils.validateCustomerExists = jest
+        .fn()
+        .mockResolvedValue(undefined); // Simulate no error for validation
+    
+      // Mock findById to return a valid customer
+      const originalFindByIdMethod = customerRepository.findById.bind(customerRepository);
+      customerRepository.findById = jest
+        .fn()
+        .mockResolvedValue(customer); // Return the mocked valid customer
+    
+      // Mock validateEmailNotInUse to simulate a valid email
+      const originalValidateEmailNotInUse = ValidationUtils.validateEmailNotInUse;
+      ValidationUtils.validateEmailNotInUse = jest.fn().mockResolvedValue(undefined);
+    
+      const req = {
+        params: { id: "12345678a" }, // ID that will lead to CustomerNotFoundException
+        body: { name: "Updated Customer", email: "new@example.com", availableCredit: 200 },
+      } as unknown as Request;
+    
+      const res = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn(),
+      } as unknown as Response;
+    
+      await customerController.updateCustomer(req, res);
+    
+      expect(res.status).toHaveBeenCalledWith(404);
+      expect(res.json).toHaveBeenCalledWith({
+        error: "Customer not found.",
+      });
+    
+      // Restore original methods after testing
+      ValidationUtils.validateCustomerExists = originalValidateCustomerExists;
+      customerRepository.findById = originalFindByIdMethod;
+      ValidationUtils.validateEmailNotInUse = originalValidateEmailNotInUse;
+    });
+    
 
     it("should return 404 when updating a customer with invalid id", async () => {
       const req = {
@@ -895,6 +1014,42 @@ describe("CustomerController Integration Tests with InMemoryCustomerRepository",
       });
     });
 
+    it("should return 404 when updating a non-existing customer in findBy", async () => {
+      const req = {
+        body: { id: "12345678a", amount: 50 },
+      } as unknown as Request;
+
+      const res = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn(),
+      } as unknown as Response;
+
+      // Simulates that findById returns undefined
+      const originalFindByIdMethod =
+        customerRepository.findById.bind(customerRepository);
+      customerRepository.findById = jest
+        .fn()
+        .mockReturnValueOnce(Promise.resolve(undefined));
+
+      // Mock validateCustomerExists so that it doesn't throw an exception
+      const originalValidateCustomerExists =
+        ValidationUtils.validateCustomerExists;
+      ValidationUtils.validateCustomerExists = jest
+        .fn()
+        .mockResolvedValue(undefined);
+
+      await customerController.addCredit(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(404);
+      expect(res.json).toHaveBeenCalledWith({
+        error: "Customer not found.",
+      });
+
+      // Restore the original method after testing
+      customerRepository.findById = originalFindByIdMethod;
+      ValidationUtils.validateCustomerExists = originalValidateCustomerExists;
+    });
+
     it("should return 400 when adding credit to a customer with invalid id", async () => {
       const req = {
         body: { id: 123, amount: 50 },
@@ -1099,6 +1254,39 @@ describe("CustomerController Integration Tests with InMemoryCustomerRepository",
         expect.objectContaining({ id: "3", availableCredit: 300 }),
         expect.objectContaining({ id: "1", availableCredit: 200 }),
         expect.objectContaining({ id: "2", availableCredit: 150 }),
+      ]);
+    });
+
+    it("should return 200 and a sorted list of customers when order is 'asc'", async () => {
+      const customer1 = new Customer("1", "Alice", "alice@example.com", 200);
+      const customer2 = new Customer("2", "Bob", "bob@example.com", 150);
+      const customer3 = new Customer(
+        "3",
+        "Charlie",
+        "charlie@example.com",
+        300
+      );
+
+      await customerRepository.create(customer1);
+      await customerRepository.create(customer2);
+      await customerRepository.create(customer3);
+
+      const req = {
+        query: { order: "asc" },
+      } as unknown as Request;
+
+      const res = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn(),
+      } as unknown as Response;
+
+      await customerController.sortCustomersByCredit(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith([
+        expect.objectContaining({ id: "2", availableCredit: 150 }),
+        expect.objectContaining({ id: "1", availableCredit: 200 }),
+        expect.objectContaining({ id: "3", availableCredit: 300 }),
       ]);
     });
 

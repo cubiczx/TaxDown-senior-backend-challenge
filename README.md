@@ -99,7 +99,7 @@ The following coverage results represent the integration test suite (`src/tests/
 | Test Type            | Statements | Branches | Functions | Lines |
 |----------------------|------------|----------|-----------|-------|
 | **Unit Tests** | 100%    | 100%   | 100%    | 100%|
-| **Integration Tests** | 51.51%  | 68.57%   | 52.77%    | 52.46%|
+| **Integration Tests** | 62.65%  | 77.61%   | 66.27%    | 62.42%|
 
 The following coverage results represent the integration test suite (`src/tests/integration/interfaces/controllers/CustomerControllerLambda.test.ts`): TODO improve Integration Tests
 
