@@ -3,18 +3,25 @@ import { CustomerControllerLambda } from "../../../../interfaces/controllers/Cus
 import { CustomerService } from "../../../../application/CustomerService";
 import { InMemoryCustomerRepository } from "../../../../infrastructure/persistence/repositories/InMemoryCustomerRepository";
 import { Customer } from "../../../../domain/Customer";
+import { ValidationUtils } from "../../../../utils/ValidationUtils";
 
 describe("CustomerControllerLambda", () => {
   let customerController: CustomerControllerLambda;
   let customerService: CustomerService;
+  let customerRepository: InMemoryCustomerRepository;
 
   beforeEach(() => {
-    const customerRepository = new InMemoryCustomerRepository();
+    customerRepository = new InMemoryCustomerRepository();
     customerService = new CustomerService(customerRepository);
     customerController = new CustomerControllerLambda(customerService);
   });
 
   describe("CustomerController - Create Customer Lambda", () => {
+    beforeEach(async () => {
+      // Clean the in-memory repository before each test
+      await customerRepository.clear();
+    });
+
     it("should create a new customer", async () => {
       const event: APIGatewayProxyEvent = {
         body: JSON.stringify({
@@ -35,6 +42,39 @@ describe("CustomerControllerLambda", () => {
       expect(customer.name).toBe("John Doe");
       expect(customer.email).toBe("john.doe@example.com");
       expect(customer.availableCredit).toBe(1000);
+    });
+
+    it("should return 201 and the created customer without availableCredit", async () => {
+      const event: APIGatewayProxyEvent = {
+        body: JSON.stringify({
+          name: "Customer Four",
+          email: "four@example.com",
+        }),
+        pathParameters: {},
+        queryStringParameters: {},
+      } as any;
+
+      const result: APIGatewayProxyResult =
+        await customerController.createCustomerLambda(event);
+
+      // Check the statusCode and creation response
+      expect(result.statusCode).toBe(201);
+      const customer = JSON.parse(result.body);
+      expect(customer).toEqual(
+        expect.objectContaining({
+          name: "Customer Four",
+          email: "four@example.com",
+          availableCredit: 0, // Confirming that availableCredit defaults to 0
+        })
+      );
+
+      // Verify that the client was saved to the in-memory repository
+      const customerInRepo = await customerRepository.findByEmail(
+        "four@example.com"
+      );
+      expect(customerInRepo).toBeDefined();
+      expect(customerInRepo?.getName()).toBe("Customer Four");
+      expect(customerInRepo?.getAvailableCredit()).toBe(0);
     });
 
     it("should return 400 if email format is invalid when creating a customer", async () => {
@@ -249,6 +289,11 @@ describe("CustomerControllerLambda", () => {
   });
 
   describe("CustomerController - Get Customer Lambda", () => {
+    beforeEach(async () => {
+      // Clean the in-memory repository before each test
+      await customerRepository.clear();
+    });
+
     it("should retrieve a customer by ID", async () => {
       const eventCreate: APIGatewayProxyEvent = {
         body: JSON.stringify({
@@ -401,6 +446,11 @@ describe("CustomerControllerLambda", () => {
   });
 
   describe("CustomerController - Update Customer Lambda", () => {
+    beforeEach(async () => {
+      // Clean the in-memory repository before each test
+      await customerRepository.clear();
+    });
+
     it("should update an existing customer", async () => {
       const eventCreate: APIGatewayProxyEvent = {
         body: JSON.stringify({
@@ -480,6 +530,59 @@ describe("CustomerControllerLambda", () => {
       expect(response.error).toBe(
         "Invalid type for property id: expected string containing exactly 9 alphanumeric characters, but received string."
       );
+    });
+
+    it("should return 404 throw CustomerNotFoundException when updating a customer that does not exist in the repository", async () => {
+      // Create a valid customer to mock the update call
+      const customer = new Customer(
+        "12345678a", // This ID will not exist in the in-memory repository
+        "Valid Customer",
+        "valid@example.com",
+        100
+      );
+
+      // Mock validateCustomerExists to simulate that the customer exists
+      const originalValidateCustomerExists =
+        ValidationUtils.validateCustomerExists;
+      ValidationUtils.validateCustomerExists = jest
+        .fn()
+        .mockResolvedValue(undefined); // Simulate no error for validation
+
+      // Mock findById to return a valid customer
+      const originalFindByIdMethod =
+        customerRepository.findById.bind(customerRepository);
+      customerRepository.findById = jest.fn().mockResolvedValue(customer); // Return the mocked valid customer
+
+      // Mock validateEmailNotInUse to simulate a valid email
+      const originalValidateEmailNotInUse =
+        ValidationUtils.validateEmailNotInUse;
+      ValidationUtils.validateEmailNotInUse = jest
+        .fn()
+        .mockResolvedValue(undefined);
+
+      const event: APIGatewayProxyEvent = {
+        pathParameters: {
+          id: "12345678a",
+        },
+        body: JSON.stringify({
+          name: "Jane Doe",
+          email: "jane.doe@example.com",
+          availableCredit: 1500,
+        }),
+        queryStringParameters: {},
+      } as unknown as APIGatewayProxyEvent;
+
+      const response = await customerController.updateCustomerLambda(event);
+
+      expect(response.statusCode).toBe(404);
+      expect(JSON.parse(response.body)).toEqual({
+        error: "Customer not found.",
+      });
+
+      // Restore original methods after testing
+      ValidationUtils.validateCustomerExists = originalValidateCustomerExists;
+      customerRepository.findById = originalFindByIdMethod;
+      ValidationUtils.validateEmailNotInUse = originalValidateEmailNotInUse;
     });
 
     it("should return 400 when updating with no valid credit", async () => {
@@ -936,6 +1039,41 @@ describe("CustomerControllerLambda", () => {
       expect(response.error).toBe("Customer not found.");
     });
 
+    it("should return 404 throw CustomerNotFoundException when updating a customer that does not exist in the repository", async () => {
+      // Mock validateCustomerExists to simulate that the customer exists
+      const originalValidateCustomerExists =
+        ValidationUtils.validateCustomerExists;
+      ValidationUtils.validateCustomerExists = jest
+        .fn()
+        .mockResolvedValue(undefined); // Simulate no error for validation
+
+      // Mock findById to return a valid customer
+      const originalFindByIdMethod =
+        customerRepository.findById.bind(customerRepository);
+      customerRepository.findById = jest.fn().mockResolvedValue(undefined); // Return the mocked valid customer
+
+      const event: APIGatewayProxyEvent = {
+        body: JSON.stringify({
+          id: "12345678a",
+          amount: 100,
+        }),
+        pathParameters: {},
+        queryStringParameters: {},
+      } as any;
+
+      const result: APIGatewayProxyResult =
+        await customerController.addCreditLambda(event);
+
+      expect(result.statusCode).toBe(404);
+      expect(JSON.parse(result.body)).toEqual({
+        error: "Customer not found.",
+      });
+
+      // Restore original methods after testing
+      ValidationUtils.validateCustomerExists = originalValidateCustomerExists;
+      customerRepository.findById = originalFindByIdMethod;
+    });
+
     it("should return 400 when adding credit to a customer with invalid id", async () => {
       const event: APIGatewayProxyEvent = {
         body: JSON.stringify({
@@ -1072,20 +1210,51 @@ describe("CustomerControllerLambda", () => {
   });
 
   describe("CustomerControllerLambda - sortCustomersByCreditLambda", () => {
-    const sortedCustomersMock = [
-      new Customer("1", "Customer One", "one@example.com", 300),
-      new Customer("2", "Customer Two", "two@example.com", 200),
-      new Customer("3", "Customer Three", "three@example.com", 100),
-    ];
-
-    beforeEach(() => {
-      jest
-        .spyOn(customerService, "sortCustomersByCredit")
-        .mockResolvedValue(sortedCustomersMock);
-    });
+    let createdCustomers: Customer[] = [];
 
     afterEach(() => {
       jest.restoreAllMocks();
+      createdCustomers = [];
+    });
+    
+    /**
+     * Creates a new customer with the given name, email, and available credit.
+     * Asserts that the createCustomerLambda method returns 201 and saves the
+     * created customer to the createdCustomers array.
+     * @param {string} name - The customer's name
+     * @param {string} email - The customer's email
+     * @param {number} availableCredit - The customer's available credit
+     * @returns {Promise<Customer>} - The newly created customer
+     */
+    const createCustomer = async (
+      name: string,
+      email: string,
+      availableCredit: number
+    ) => {
+      const eventCreate: APIGatewayProxyEvent = {
+        body: JSON.stringify({
+          name,
+          email,
+          availableCredit,
+        }),
+        pathParameters: {},
+        queryStringParameters: {},
+      } as any;
+
+      const resultCreate: APIGatewayProxyResult =
+        await customerController.createCustomerLambda(eventCreate);
+      expect(resultCreate.statusCode).toBe(201);
+
+      const createdCustomer = JSON.parse(resultCreate.body);
+      createdCustomers.push(createdCustomer);// Save the created client
+      return createdCustomer;
+    };
+
+    // Create the clients needed for testing
+    beforeEach(async () => {
+      await createCustomer("Customer One", "one@example.com", 300);
+      await createCustomer("Customer Two", "two@example.com", 200);
+      await createCustomer("Customer Three", "three@example.com", 100);
     });
 
     it("should return 200 and a sorted list of customers when order is 'asc'", async () => {
@@ -1100,8 +1269,7 @@ describe("CustomerControllerLambda", () => {
 
       expect(result.statusCode).toBe(200);
       const response = JSON.parse(result.body);
-      expect(response).toEqual(sortedCustomersMock);
-      expect(customerService.sortCustomersByCredit).toHaveBeenCalledWith("asc");
+      expect(response).toEqual(createdCustomers.reverse());
     });
 
     it("should return 200 and a sorted list of customers with default order 'desc' when no order is provided", async () => {
@@ -1116,10 +1284,7 @@ describe("CustomerControllerLambda", () => {
 
       expect(result.statusCode).toBe(200);
       const response = JSON.parse(result.body);
-      expect(response).toEqual(sortedCustomersMock);
-      expect(customerService.sortCustomersByCredit).toHaveBeenCalledWith(
-        "desc"
-      );
+      expect(response).toEqual(createdCustomers); // Compara con la lista ordenada esperada en orden descendente
     });
 
     it("should return 200 and a sorted list of customers when order is 'desc'", async () => {
@@ -1134,15 +1299,10 @@ describe("CustomerControllerLambda", () => {
 
       expect(result.statusCode).toBe(200);
       const response = JSON.parse(result.body);
-      expect(response).toEqual(sortedCustomersMock);
-      expect(customerService.sortCustomersByCredit).toHaveBeenCalledWith(
-        "desc"
-      );
+      expect(response).toEqual(createdCustomers); // Compara con la lista ordenada esperada en orden descendente
     });
 
-    it("should return 400 if order is invalid in should list all customers", async () => {
-      jest.restoreAllMocks();
-
+    it("should return 400 if order is invalid", async () => {
       const event: APIGatewayProxyEvent = {
         pathParameters: {},
         queryStringParameters: { order: "invalid-order" },
@@ -1178,9 +1338,11 @@ describe("CustomerControllerLambda", () => {
       expect(response.error).toBe(
         "An unknown error occurred while sorting customers by credit: Unexpected error"
       );
+    });
 
-      // Restore the `create` method to its original behavior after testing
-      jest.restoreAllMocks();
+    it.skip("should use default order 'desc' when order is undefined by mocking validateSortOrder", async () => {
+      jest.spyOn(ValidationUtils, "validateSortOrder").mockReturnValue("desc");
+      // Agregar lógica de prueba según sea necesario
     });
   });
 });

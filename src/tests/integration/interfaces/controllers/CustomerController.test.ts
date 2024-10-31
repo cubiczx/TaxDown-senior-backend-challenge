@@ -60,7 +60,7 @@ describe("CustomerController Integration Tests with InMemoryCustomerRepository",
       const req = {
         body: {
           name: "Customer Four",
-          email: "four@example.com"
+          email: "four@example.com",
         },
       } as Request;
 
@@ -606,46 +606,52 @@ describe("CustomerController Integration Tests with InMemoryCustomerRepository",
         "valid@example.com",
         100
       );
-    
+
       // Mock validateCustomerExists to simulate that the customer exists
-      const originalValidateCustomerExists = ValidationUtils.validateCustomerExists;
+      const originalValidateCustomerExists =
+        ValidationUtils.validateCustomerExists;
       ValidationUtils.validateCustomerExists = jest
         .fn()
         .mockResolvedValue(undefined); // Simulate no error for validation
-    
+
       // Mock findById to return a valid customer
-      const originalFindByIdMethod = customerRepository.findById.bind(customerRepository);
-      customerRepository.findById = jest
-        .fn()
-        .mockResolvedValue(customer); // Return the mocked valid customer
-    
+      const originalFindByIdMethod =
+        customerRepository.findById.bind(customerRepository);
+      customerRepository.findById = jest.fn().mockResolvedValue(customer); // Return the mocked valid customer
+
       // Mock validateEmailNotInUse to simulate a valid email
-      const originalValidateEmailNotInUse = ValidationUtils.validateEmailNotInUse;
-      ValidationUtils.validateEmailNotInUse = jest.fn().mockResolvedValue(undefined);
-    
+      const originalValidateEmailNotInUse =
+        ValidationUtils.validateEmailNotInUse;
+      ValidationUtils.validateEmailNotInUse = jest
+        .fn()
+        .mockResolvedValue(undefined);
+
       const req = {
         params: { id: "12345678a" }, // ID that will lead to CustomerNotFoundException
-        body: { name: "Updated Customer", email: "new@example.com", availableCredit: 200 },
+        body: {
+          name: "Updated Customer",
+          email: "new@example.com",
+          availableCredit: 200,
+        },
       } as unknown as Request;
-    
+
       const res = {
         status: jest.fn().mockReturnThis(),
         json: jest.fn(),
       } as unknown as Response;
-    
+
       await customerController.updateCustomer(req, res);
-    
+
       expect(res.status).toHaveBeenCalledWith(404);
       expect(res.json).toHaveBeenCalledWith({
         error: "Customer not found.",
       });
-    
+
       // Restore original methods after testing
       ValidationUtils.validateCustomerExists = originalValidateCustomerExists;
       customerRepository.findById = originalFindByIdMethod;
       ValidationUtils.validateEmailNotInUse = originalValidateEmailNotInUse;
     });
-    
 
     it("should return 404 when updating a customer with invalid id", async () => {
       const req = {
@@ -1288,6 +1294,52 @@ describe("CustomerController Integration Tests with InMemoryCustomerRepository",
         expect.objectContaining({ id: "1", availableCredit: 200 }),
         expect.objectContaining({ id: "3", availableCredit: 300 }),
       ]);
+    });
+
+    it.skip("should use default order 'desc' when order is undefined by mocking validateSortOrder", async () => {
+      const customer1 = new Customer("1", "Alice", "alice@example.com", 200);
+      const customer2 = new Customer("2", "Bob", "bob@example.com", 150);
+      const customer3 = new Customer(
+        "3",
+        "Charlie",
+        "charlie@example.com",
+        300
+      );
+
+      await customerRepository.create(customer1);
+      await customerRepository.create(customer2);
+      await customerRepository.create(customer3);
+
+      const req = {
+        query: {}, // We leave `order` undefined
+      } as unknown as Request;
+
+      const res = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn(),
+      } as unknown as Response;
+
+      // Mock validateSortOrder to verify that `order` is undefined
+      const originalValidateSortOrder = ValidationUtils.validateSortOrder;
+      ValidationUtils.validateSortOrder = jest
+        .fn()
+        .mockImplementation((order) => {
+          expect(order).toBeUndefined(); // Confirm that it is undefined
+          return "desc";
+        });
+
+      // We call `sortCustomersByCredit` with `undefined` directly
+      await customerService.sortCustomersByCredit(undefined);
+
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith([
+        expect.objectContaining({ id: "3", availableCredit: 300 }),
+        expect.objectContaining({ id: "1", availableCredit: 200 }),
+        expect.objectContaining({ id: "2", availableCredit: 150 }),
+      ]);
+
+      // Restore original validateSortOrder method
+      ValidationUtils.validateSortOrder = originalValidateSortOrder;
     });
 
     it("should return 400 if an invalid order is provided", async () => {

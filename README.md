@@ -94,19 +94,19 @@ The following coverage results represent the integration test suite (`src/tests/
 | **Unit Tests** | TODO%    | TODO%   | TODO%    | TODO%|
 | **Integration Tests** | TODO%  | TODO%   | TODO%    | TODO%|
 
-The following coverage results represent the integration test suite (`src/tests/integration/interfaces/controllers/CustomerController.test.ts`): TODO improve Integration Tests
+The following coverage results represent the integration test suite (`src/tests/integration/interfaces/controllers/CustomerController.test.ts`):
 
 | Test Type            | Statements | Branches | Functions | Lines |
 |----------------------|------------|----------|-----------|-------|
 | **Unit Tests** | 100%    | 100%   | 100%    | 100%|
 | **Integration Tests** | 62.65%  | 77.61%   | 66.27%    | 62.42%|
 
-The following coverage results represent the integration test suite (`src/tests/integration/interfaces/controllers/CustomerControllerLambda.test.ts`): TODO improve Integration Tests
+The following coverage results represent the integration test suite (`src/tests/integration/interfaces/controllers/CustomerControllerLambda.test.ts`):
 
 | Test Type            | Statements | Branches | Functions | Lines |
 |----------------------|------------|----------|-----------|-------|
 | **Unit Tests** | 100%    | 88.88%   | 100%    | 100%|
-| **Integration Tests** | 45%  | 50.74%   | 49.54%    | 45.75%|
+| **Integration Tests** | 56.92%  | 64.17%   | 67.44%    | 56.66%|
 
 The following coverage results represent the integration test suite (`src/tests/unit/interfaces/controllers/CustomerController.test.ts`):
 
