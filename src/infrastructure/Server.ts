@@ -53,6 +53,7 @@ app.get("/customers/:id", (req: Request, res: Response) =>
 app.put("/customers/:id", (req: Request, res: Response) =>
   customerController.updateCustomer(req, res)
 );
+// TODO add Patch method
 app.delete("/customers/:id", (req: Request, res: Response) =>
   customerController.deleteCustomer(req, res)
 );
