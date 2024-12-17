@@ -90,10 +90,3 @@ Then inside the shell:
 
 ## Known issues
 
-MongoDB data is not persisted when container is destroyed and recreated. We can stop and start **database** container without losing
-collection data. However, when we remove containers with `docker compose down` and recreate them with
-`docker compose up -d` container data is wiped out.
-
-Restarting **api** container also results in database data loss.
-
-We will address this issue later.

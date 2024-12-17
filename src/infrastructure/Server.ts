@@ -5,6 +5,7 @@ import swaggerJsdoc from "swagger-jsdoc";
 import swaggerUi from "swagger-ui-express";
 import dotenv from "dotenv";
 import {MongoDBCustomerRepository} from "./persistence/repositories/MongoDBCustomerRepository";
+import {InMemoryCustomerRepository} from "./persistence/repositories/InMemoryCustomerRepository";
 
 // Load environment variables from .env file
 dotenv.config();
@@ -30,17 +31,19 @@ const specs = swaggerJsdoc(options);
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(specs));
 
 // Configuring Services and Drivers
-// const customerRepository = new InMemoryCustomerRepository();
-const uri = process.env.MONGODB_URI || "mongodb://localhost:27017";
-const dbName = process.env.DB_NAME || "motorbike-shop-api";
-const collectionName = "customers";
-const customerRepository = new MongoDBCustomerRepository(
-    uri,
-    dbName,
-    collectionName
-);
+if (process.env.CUSTOMER_REPOSITORY_IN_MEMORY) {
+    app.locals.customerRepository = new InMemoryCustomerRepository();
+} else {
+    const uri = process.env.MONGODB_URI || "mongodb://localhost:27017";
+    const dbName = process.env.DB_NAME || "motorbike-shop-api";
+    const collectionName = "customers";
+    app.locals.customerRepository = new MongoDBCustomerRepository(
+        uri,
+        dbName,
+        collectionName
+    );
+}
 
-app.locals.customerRepository = customerRepository;
 const customerService = new CustomerService(app.locals.customerRepository);
 
 const customerController = new CustomerController(customerService);
