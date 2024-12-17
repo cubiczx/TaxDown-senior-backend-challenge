@@ -10,17 +10,23 @@ services:
   # Node api service
   api:
     container_name: api
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: ${TARGET}
     ports:
-      # local->container
+      # avoid conflict with ReactJS frontend default port.
       - 4000:3000
     environment:
       PORT: 3000
-      MONGODB_URI: mongodb://mongo_db:27017
+      MONGODB_URI: ${MONGODB_DOCKER_URI}
       DB_NAME: motorbike-shop-api
       COLLECTION_NAME: customers
+    volumes: # TODO: Not sure - we have missing node_modules in local file system.
+      - .:/usr/src/app
+      # - /usr/src/app/node_modules
     depends_on:
       - mongo_db
 
 volumes:
-  mongo_data: {}
+  mongo_data:
