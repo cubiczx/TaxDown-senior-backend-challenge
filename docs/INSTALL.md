@@ -186,11 +186,11 @@ After installing MongoDB and starting the server, you can create a connection in
    8. **To change MongoDB connection**:
       - You can edit the .env file.
 
-###### Additional Note
+###### Additional Note linux
 
 You can use the MongoDB shell by typing mongo in your terminal.
 
-## 4. Create a .env File in the Root Directory
+## 3. Create a .env File in the Root Directory
 
 To set up your environment variables, create a .env file:
 

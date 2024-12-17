@@ -1,7 +1,7 @@
 services:
   # Mongodb service
   mongo_db:
-    container_name: db_container
+    container_name: mongo_db
     image: mongo:latest
     restart: always
     ports:
@@ -15,14 +15,14 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      target: ${TARGET}
+      target: ${BUILD_TARGET}
     restart: always
     ports:
       # avoid conflict with ReactJS frontend default port.
       - "4000:3000"
     environment:
       PORT: 3000
-      MONGODB_URI: ${MONGODB_DOCKER_URI}
+      MONGODB_URI: mongodb://mongo_db:27017
       DB_NAME: motorbike-shop-api
       COLLECTION_NAME: customers
     volumes:
