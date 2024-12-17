@@ -4,6 +4,8 @@ services:
     container_name: db_container
     image: mongo:latest
     restart: always
+    ports:
+      - "27017:27017"
     volumes:
       - mongo_data:/data/db
 
@@ -14,17 +16,17 @@ services:
       context: .
       dockerfile: Dockerfile
       target: ${TARGET}
+    restart: always
     ports:
       # avoid conflict with ReactJS frontend default port.
-      - 4000:3000
+      - "4000:3000"
     environment:
       PORT: 3000
       MONGODB_URI: ${MONGODB_DOCKER_URI}
       DB_NAME: motorbike-shop-api
       COLLECTION_NAME: customers
-    volumes: # TODO: Not sure - we have missing node_modules in local file system.
+    volumes:
       - .:/usr/src/app
-      # - /usr/src/app/node_modules
     depends_on:
       - mongo_db
 
