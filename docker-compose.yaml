@@ -19,7 +19,7 @@ services:
     restart: always
     ports:
       # avoid conflict with ReactJS frontend default port.
-      - "4000:3000"
+      - "${DOCKER_API_PORT}:3000"
     environment:
       PORT: 3000
       MONGODB_URI: mongodb://mongo_db:27017
