@@ -16,15 +16,15 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/cubiczx/TaxDown-senior-backend-challenge.git"
+    "url": "git+https://github.com/alex3493/xavier-tax-down-senior-backend-challenge.git"
   },
   "keywords": [],
   "author": "Xavier Palacín Ayuso",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/cubiczx/TaxDown-senior-backend-challenge/issues"
+    "url": "https://github.com/alex3493/xavier-tax-down-senior-backend-challenge/issues"
   },
-  "homepage": "https://github.com/cubiczx/TaxDown-senior-backend-challenge#readme",
+  "homepage": "https://github.com/alex3493/xavier-tax-down-senior-backend-challenge#readme",
   "dependencies": {
     "aws-serverless-express": "^3.4.0",
     "dotenv": "^16.4.5",
