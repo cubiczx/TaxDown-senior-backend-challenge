@@ -92,7 +92,9 @@ This is how we run in dev mode (from `package.json`):
 TODO: we should read more about `nodemon` package configurations and add some fine-tuning, e.g. exclude `/docs` folder
 from hot-reload flow, etc.
 
-Evidently enough, in productions mode we have to rebuild containers to get recent code changes reflected.
+Important note: hot-reload will not work when .env settings are updated. Env changes require full container reinitialization.
+
+Evidently enough, in production mode we have to rebuild containers to get recent code changes reflected.
 
 ## Running tests
 

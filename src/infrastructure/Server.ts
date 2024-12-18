@@ -31,7 +31,8 @@ const specs = swaggerJsdoc(options);
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(specs));
 
 // Configuring Services and Drivers
-if (process.env.CUSTOMER_REPOSITORY_IN_MEMORY) {
+
+if (process.env.CUSTOMER_REPOSITORY_IN_MEMORY === '1') {
     app.locals.customerRepository = new InMemoryCustomerRepository();
 } else {
     const uri = process.env.MONGODB_URI || "mongodb://localhost:27017";
