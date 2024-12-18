@@ -100,9 +100,6 @@ This is how we run in dev mode (from `package.json`):
   },
 ```
 
-TODO: we should read more about `nodemon` package configurations and add some fine-tuning, e.g. exclude `/docs` folder
-from hot-reload flow, etc.
-
 Important note: hot-reload will not work when .env settings are updated. Env changes require full container
 reinitialization.
 
