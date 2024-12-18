@@ -31,10 +31,7 @@ const specs = swaggerJsdoc(options);
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(specs));
 
 // Configuring Services and Drivers
-
-if (process.env.CUSTOMER_REPOSITORY_IN_MEMORY === '1') {
-    app.locals.customerRepository = new InMemoryCustomerRepository();
-} else {
+if (process.env.REPOSITORY_STORAGE === 'database') {
     const uri = process.env.MONGODB_URI || "mongodb://localhost:27017";
     const dbName = process.env.DB_NAME || "motorbike-shop-api";
     const collectionName = "customers";
@@ -43,6 +40,8 @@ if (process.env.CUSTOMER_REPOSITORY_IN_MEMORY === '1') {
         dbName,
         collectionName
     );
+} else {
+    app.locals.customerRepository = new InMemoryCustomerRepository();
 }
 
 const customerService = new CustomerService(app.locals.customerRepository);

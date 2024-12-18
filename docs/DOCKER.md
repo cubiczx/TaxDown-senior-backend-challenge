@@ -63,6 +63,17 @@ docker compose build
 docker compose up -d
 ```
 
+## Repository storage
+
+By default, we store customer collection in database. We can switch between database and memory storage changing env
+value:
+
+```
+# Repository storage: database | memory
+REPOSITORY_STORAGE=database
+# REPOSITORY_STORAGE=memory
+```
+
 ## Server port
 
 By default, API is served on port 3000. However, it may cause conflicts with other containers, e.g. a React UI
@@ -92,7 +103,8 @@ This is how we run in dev mode (from `package.json`):
 TODO: we should read more about `nodemon` package configurations and add some fine-tuning, e.g. exclude `/docs` folder
 from hot-reload flow, etc.
 
-Important note: hot-reload will not work when .env settings are updated. Env changes require full container reinitialization.
+Important note: hot-reload will not work when .env settings are updated. Env changes require full container
+reinitialization.
 
 Evidently enough, in production mode we have to rebuild containers to get recent code changes reflected.
 
