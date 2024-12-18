@@ -74,6 +74,26 @@ application also running on port 3000. In docker environment we set API port to 
 DOCKER_API_PORT=3001
 ```
 
+## Hot reload
+
+We are using [nodemon](https://github.com/remy/nodemon) package in development mode, so that code changes in server code
+are reflected automatically in next server response, no need to rebuild and restart Docker containers.
+
+This is how we run in dev mode (from `package.json`):
+
+```
+  "scripts": {
+    ...
+    "devExpress": "nodemon src/infrastructure/Server.ts",
+    ...
+  },
+```
+
+TODO: we should read more about `nodemon` package configurations and add some fine-tuning, e.g. exclude `/docs` folder
+from hot-reload flow, etc.
+
+Evidently enough, in productions mode we have to rebuild containers to get recent code changes reflected.
+
 ## Running tests
 
 Tests must be run inside Docker container:
